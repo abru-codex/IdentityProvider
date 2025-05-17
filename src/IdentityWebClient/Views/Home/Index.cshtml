@@ -3,6 +3,31 @@
 }
 
 <div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+    <h1 class="display-4">Identity Web Client</h1>
+    <p class="mb-4">Manage users and roles with the IdentityProvider server.</p>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5>User Management</h5>
+            </div>
+            <div class="card-body">
+                <p>Create, edit, and manage users. Assign roles to control access to features.</p>
+                <a asp-controller="Users" asp-action="Index" class="btn btn-primary">Manage Users</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5>Role Management</h5>
+            </div>
+            <div class="card-body">
+                <p>Create and manage roles for your application. Define permissions by role.</p>
+                <a asp-controller="Roles" asp-action="Index" class="btn btn-primary">Manage Roles</a>
+            </div>
+        </div>
+    </div>
 </div>

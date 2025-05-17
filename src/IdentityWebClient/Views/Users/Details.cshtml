@@ -1,0 +1,70 @@
+@model IdentityWebClient.Models.Users.UserDetailsDto
+
+@{
+    ViewData["Title"] = "User Details";
+}
+
+<h1>User Details</h1>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success">
+        @TempData["SuccessMessage"]
+    </div>
+}
+
+<div>
+    <hr />
+    <dl class="row">
+        <dt class="col-sm-3">Email</dt>
+        <dd class="col-sm-9">@Model.Email</dd>
+
+        <dt class="col-sm-3">Username</dt>
+        <dd class="col-sm-9">@Model.UserName</dd>
+
+        <dt class="col-sm-3">Phone Number</dt>
+        <dd class="col-sm-9">@Model.PhoneNumber</dd>
+
+        <dt class="col-sm-3">Email Confirmed</dt>
+        <dd class="col-sm-9">@(Model.EmailConfirmed ? "Yes" : "No")</dd>
+
+        <dt class="col-sm-3">Phone Number Confirmed</dt>
+        <dd class="col-sm-9">@(Model.PhoneNumberConfirmed ? "Yes" : "No")</dd>
+
+        <dt class="col-sm-3">Two Factor Enabled</dt>
+        <dd class="col-sm-9">@(Model.TwoFactorEnabled ? "Yes" : "No")</dd>
+
+        <dt class="col-sm-3">Lockout Enabled</dt>
+        <dd class="col-sm-9">@(Model.LockoutEnabled ? "Yes" : "No")</dd>
+
+        @if (Model.LockoutEnd.HasValue)
+        {
+            <dt class="col-sm-3">Lockout End</dt>
+            <dd class="col-sm-9">@Model.LockoutEnd.Value.LocalDateTime</dd>
+        }
+
+        <dt class="col-sm-3">Access Failed Count</dt>
+        <dd class="col-sm-9">@Model.AccessFailedCount</dd>
+
+        <dt class="col-sm-3">Roles</dt>
+        <dd class="col-sm-9">
+            @if (Model.Roles.Any())
+            {
+                foreach (var role in Model.Roles)
+                {
+                    <span class="badge bg-primary me-1">@role</span>
+                }
+            }
+            else
+            {
+                <span>No roles assigned</span>
+            }
+        </dd>
+    </dl>
+</div>
+<div>
+    <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary">Edit</a>
+    <a asp-action="ChangePassword" asp-route-id="@Model.Id" class="btn btn-warning">Change Password</a>
+    <a asp-action="ManageRoles" asp-route-id="@Model.Id" class="btn btn-secondary">Manage Roles</a>
+    <a asp-action="Index" class="btn btn-secondary">Back to List</a>
+</div>

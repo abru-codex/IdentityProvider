@@ -1,0 +1,39 @@
+@model IdentityWebClient.Models.Roles.RoleDetailsDto
+
+@{
+    ViewData["Title"] = "Role Details";
+}
+
+<h1>Role Details</h1>
+
+<div>
+    <hr />
+    <dl class="row">
+        <dt class="col-sm-3">Name</dt>
+        <dd class="col-sm-9">@Model.Name</dd>
+
+        <dt class="col-sm-3">Normalized Name</dt>
+        <dd class="col-sm-9">@Model.NormalizedName</dd>
+
+        <dt class="col-sm-3">Users</dt>
+        <dd class="col-sm-9">
+            @if (Model.Users.Any())
+            {
+                <ul>
+                    @foreach (var user in Model.Users)
+                    {
+                        <li>@user</li>
+                    }
+                </ul>
+            }
+            else
+            {
+                <span>No users have this role</span>
+            }
+        </dd>
+    </dl>
+</div>
+<div>
+    <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary">Edit</a>
+    <a asp-action="Index" class="btn btn-secondary">Back to List</a>
+</div>
