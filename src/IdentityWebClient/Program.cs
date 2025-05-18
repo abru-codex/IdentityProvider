@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
+using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -33,6 +35,8 @@ builder.Services.AddAuthentication(options =>
     options.GetClaimsFromUserInfoEndpoint = true;
     options.UseTokenLifetime = true;
 
+    options.ProtocolValidator.RequireNonce = false;
+
     options.Scope.Clear();
     options.Scope.Add("openid");
     options.Scope.Add("profile");
@@ -43,6 +47,10 @@ builder.Services.AddAuthentication(options =>
     // Map claims from the ID token
     options.TokenValidationParameters.NameClaimType = "name";
     options.TokenValidationParameters.RoleClaimType = ClaimTypes.Role;
+    options.TokenValidationParameters.ValidateIssuer = false;
+    options.TokenValidationParameters.ValidateAudience = false;
+    options.TokenValidationParameters.ValidateIssuerSigningKey = true;
+    options.TokenValidationParameters.IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["IdentityProvider:Key"]));
 });
 
 // Register IHttpContextAccessor

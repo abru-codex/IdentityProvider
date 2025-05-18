@@ -65,7 +65,8 @@ public class TokenService
             new Claim(JwtRegisteredClaimNames.Sub, user.Id),
             new Claim(JwtRegisteredClaimNames.Email, user.Email ?? string.Empty),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-            new Claim("preferred_username", user.UserName ?? string.Empty)
+            new Claim("preferred_username", user.UserName ?? string.Empty),
+            new Claim("iat", DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString()),
         };
 
         if (!string.IsNullOrEmpty(user.PhoneNumber))

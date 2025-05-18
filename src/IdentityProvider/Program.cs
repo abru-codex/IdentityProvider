@@ -59,21 +59,12 @@ builder.Services.AddScoped<AuthorizationService>();
 builder.Services.AddHttpContextAccessor();
 
 // Configure Authentication
-builder.Services.AddAuthentication(options =>
-{
-    // Default schemes
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
-
-    // Add Cookie support for web-based flows
-    options.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-})
-.AddCookie(CookieAuthenticationDefaults.AuthenticationScheme, options =>
-{
-    options.LoginPath = "/api/auth/login";
-    options.LogoutPath = "/api/auth/logout";
-})
+builder.Services.AddAuthentication()
+// .AddCookie(CookieAuthenticationDefaults.AuthenticationScheme, options =>
+// {
+//     options.LoginPath = "/api/auth/login";
+//     options.LogoutPath = "/api/auth/logout";
+// })
 .AddJwtBearer(options =>
 {
     options.TokenValidationParameters = new TokenValidationParameters
