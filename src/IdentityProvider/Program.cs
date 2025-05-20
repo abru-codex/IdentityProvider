@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using System.Text;
 using IdentityProvider.DbContext;
 using IdentityProvider.Endpoints;
@@ -53,6 +54,7 @@ builder.Services.Configure<DefaultAdminOption>(builder.Configuration.GetSection(
 builder.Services.Configure<OpenIdConnectOptions>(builder.Configuration.GetSection("OpenIdConnect"));
 
 // Register services
+builder.Services.AddSingleton<JwksService>();
 builder.Services.AddScoped<TokenService>(); // Changed from Singleton to Scoped
 builder.Services.AddScoped<DbSeeder>();
 builder.Services.AddScoped<AuthorizationService>();
@@ -60,11 +62,6 @@ builder.Services.AddHttpContextAccessor();
 
 // Configure Authentication
 builder.Services.AddAuthentication()
-// .AddCookie(CookieAuthenticationDefaults.AuthenticationScheme, options =>
-// {
-//     options.LoginPath = "/api/auth/login";
-//     options.LogoutPath = "/api/auth/logout";
-// })
 .AddJwtBearer(options =>
 {
     options.TokenValidationParameters = new TokenValidationParameters
@@ -75,7 +72,7 @@ builder.Services.AddAuthentication()
         ValidateIssuerSigningKey = true,
         ValidIssuer = builder.Configuration["Jwt:Issuer"],
         ValidAudience = builder.Configuration["Jwt:Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
+        // We'll configure the IssuerSigningKey in the OnTokenValidation event when we have access to the service provider
     };
 
     // Enable using the access token from the query string for SignalR and other non-header based protocols
@@ -91,6 +88,17 @@ builder.Services.AddAuthentication()
             {
                 context.Token = accessToken;
             }
+
+            return Task.CompletedTask;
+        },
+
+        OnTokenValidated = context =>
+        {
+            // Get JwksService from the service provider when it's available
+            var jwksService = context.HttpContext.RequestServices.GetRequiredService<JwksService>();
+
+            // Update the validation parameters with the security key
+            context.Options.TokenValidationParameters.IssuerSigningKey = jwksService.GetSecurityKey();
 
             return Task.CompletedTask;
         }
@@ -157,6 +165,16 @@ app.UseAuthorization();
 app.MapAuthenticationEndpoint();
 app.MapUserManagementEndpoint();
 app.MapRoleManagementEndpoint();
+
+app.MapGet("/", (ClaimsPrincipal user) =>
+{
+    return Results.Ok(new
+    {
+        Message = "Welcome to the Identity Provider API!",
+        User = user.Identity?.Name,
+        Roles = user.Claims.Select(c => new { c.Type, c.Value })
+    });
+});
 
 // Seed the database
 await app.SeedDatabaseAsync();

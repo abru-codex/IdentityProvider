@@ -18,17 +18,20 @@ public class TokenService
     private readonly ApplicationDbContext _dbContext;
     private readonly UserManager<IdentityUser> _userManager;
     private readonly IOptions<OpenIdConnectOptions> _oidcOptions;
+    private readonly JwksService _jwksService;
 
     public TokenService(
         IOptions<JwtOption> jwtOption,
         ApplicationDbContext dbContext,
         UserManager<IdentityUser> userManager,
-        IOptions<OpenIdConnectOptions> oidcOptions)
+        IOptions<OpenIdConnectOptions> oidcOptions,
+        JwksService jwksService)
     {
         _jwtOption = jwtOption.Value;
         _dbContext = dbContext;
         _userManager = userManager;
         _oidcOptions = oidcOptions;
+        _jwksService = jwksService;
     }
 
     public string GenerateJwtToken(string username, string userId, IList<string> roles)
@@ -41,15 +44,14 @@ public class TokenService
         };
         claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
 
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtOption.Key));
-        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+        var signingCredentials = _jwksService.GetSigningCredentials();
 
         var token = new JwtSecurityToken(
             issuer: _jwtOption.Issuer,
             audience: _jwtOption.Audience,
             claims: claims,
             expires: DateTime.Now.AddHours(1),
-            signingCredentials: creds);
+            signingCredentials: signingCredentials);
 
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
@@ -83,8 +85,7 @@ public class TokenService
         // Add client ID as audience
         claims.Add(new Claim(JwtRegisteredClaimNames.Aud, clientId));
 
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtOption.Key));
-        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+        var signingCredentials = _jwksService.GetSigningCredentials();
 
         var tokenLifetime = lifetime ?? TimeSpan.FromMinutes(10);
 
@@ -92,7 +93,7 @@ public class TokenService
             issuer: _jwtOption.Issuer,
             claims: claims,
             expires: DateTime.UtcNow.Add(tokenLifetime),
-            signingCredentials: creds);
+            signingCredentials: signingCredentials);
 
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
@@ -118,8 +119,7 @@ public class TokenService
         // Add scopes as claims
         claims.AddRange(scopes.Select(scope => new Claim("scope", scope)));
 
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtOption.Key));
-        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+        var signingCredentials = _jwksService.GetSigningCredentials();
 
         // Find client configuration to determine token lifetime
         var clientConfig = _oidcOptions.Value.Clients.FirstOrDefault(c => c.ClientId == clientId);
@@ -130,7 +130,7 @@ public class TokenService
             audience: _jwtOption.Issuer,
             claims: claims,
             expires: DateTime.UtcNow.Add(tokenLifetime),
-            signingCredentials: creds);
+            signingCredentials: signingCredentials);
 
         return new JwtSecurityTokenHandler().WriteToken(token);
     }

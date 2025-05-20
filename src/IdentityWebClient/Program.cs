@@ -1,10 +1,8 @@
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
-using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,23 +10,20 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllersWithViews();
 
 // Configure authentication
-JwtSecurityTokenHandler.DefaultMapInboundClaims = false;
+// JwtSecurityTokenHandler.DefaultMapInboundClaims = false;
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
     options.DefaultChallengeScheme = OpenIdConnectDefaults.AuthenticationScheme;
 })
-.AddCookie(CookieAuthenticationDefaults.AuthenticationScheme, options =>
+.AddCookie()
+.AddOpenIdConnect(options =>
 {
-    options.Cookie.Name = "IdentityWebClient";
-})
-.AddOpenIdConnect(OpenIdConnectDefaults.AuthenticationScheme, options =>
-{
-    options.RequireHttpsMetadata = false;
-    options.MetadataAddress = builder.Configuration["IdentityProvider:MetadataAddress"] ?? "http://localhost:5001/api/auth/.well-known/openid-configuration";
-    options.Authority = builder.Configuration["IdentityProvider:Authority"] ?? "http://localhost:5001";
-    options.ClientId = builder.Configuration["IdentityProvider:ClientId"] ?? "web-client";
-    options.ClientSecret = builder.Configuration["IdentityProvider:ClientSecret"] ?? "web-secret";
+    options.RequireHttpsMetadata = true;
+    options.MetadataAddress = builder.Configuration["IdentityProvider:MetadataAddress"];
+    options.Authority = builder.Configuration["IdentityProvider:Authority"];
+    options.ClientId = builder.Configuration["IdentityProvider:ClientId"];
+    options.ClientSecret = builder.Configuration["IdentityProvider:ClientSecret"];
 
     options.ResponseType = OpenIdConnectResponseType.Code;
     options.SaveTokens = true;
@@ -44,13 +39,9 @@ builder.Services.AddAuthentication(options =>
     options.Scope.Add("api");
     options.Scope.Add("offline_access");
 
-    // Map claims from the ID token
-    options.TokenValidationParameters.NameClaimType = "name";
-    options.TokenValidationParameters.RoleClaimType = ClaimTypes.Role;
-    options.TokenValidationParameters.ValidateIssuer = false;
-    options.TokenValidationParameters.ValidateAudience = false;
-    options.TokenValidationParameters.ValidateIssuerSigningKey = true;
-    options.TokenValidationParameters.IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["IdentityProvider:Key"]));
+    // Map claims
+    options.ClaimActions.MapJsonKey("sub", "sub");
+    options.ClaimActions.MapJsonKey("email", "email");
 });
 
 // Register IHttpContextAccessor

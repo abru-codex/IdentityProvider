@@ -324,24 +324,15 @@ public static class AuthenticationEndpoint
             operation.Summary = "OpenID Connect Userinfo Endpoint";
             operation.Description = "Returns claims about the authenticated end-user";
             return operation;
-        })
-        .RequireAuthorization();
+        });
 
         // JWKS endpoint for key discovery
-        authGroup.MapGet("/.well-known/jwks.json", (IConfiguration configuration) =>
+        authGroup.MapGet("/.well-known/jwks.json", (JwksService jwksService) =>
         {
-            // In a real implementation, this would contain the public keys used to verify signatures
-            // For simplicity, we'll return a minimal set since we're using symmetric keys
+            // Return the JSON Web Key Set with our RSA public key
             return Results.Ok(new
             {
-                keys = new[] {
-                    new {
-                        kty = "oct",
-                        use = "sig",
-                        kid = "1",
-                        alg = "HS256"
-                    }
-                }
+                keys = jwksService.GetJsonWebKeys()
             });
         })
         .WithOpenApi(operation =>
@@ -367,7 +358,7 @@ public static class AuthenticationEndpoint
                 response_types_supported = new[] { "code", "id_token", "token", "id_token token", "code id_token", "code token", "code id_token token" },
                 grant_types_supported = new[] { "authorization_code", "client_credentials", "password", "refresh_token" },
                 subject_types_supported = new[] { "public" },
-                id_token_signing_alg_values_supported = new[] { "HS256" },
+                id_token_signing_alg_values_supported = new[] { "RS256" },
                 scopes_supported = new[] { "openid", "profile", "email", "api", "offline_access" },
                 token_endpoint_auth_methods_supported = new[] { "client_secret_basic", "client_secret_post" },
                 claims_supported = new[] { "sub", "name", "email", "email_verified", "role", "preferred_username" },
