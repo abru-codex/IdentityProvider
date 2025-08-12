@@ -7,6 +7,13 @@
     <p class="mb-4">Manage users and roles with the IdentityProvider server.</p>
 </div>
 
+<div class="alert alert-info">
+    <strong>Email:</strong> @User?.Identity?.Name<br />
+    <strong>Username:</strong> @User?.Identity?.Name<br/>
+    <strong>Authenticated:</strong> @(User?.Identity?.IsAuthenticated == true ? "Yes" : "No")<br />
+    <strong>Authentication Type:</strong> @User?.Identity?.AuthenticationType<br />
+</div>
+
 <div class="row">
     <div class="col-md-6">
         <div class="card mb-4">

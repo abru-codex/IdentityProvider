@@ -62,48 +62,48 @@ builder.Services.AddHttpContextAccessor();
 
 // Configure Authentication
 builder.Services.AddAuthentication()
-.AddJwtBearer(options =>
-{
-    options.TokenValidationParameters = new TokenValidationParameters
+    .AddCookie()
+    .AddJwtBearer(options =>
     {
-        ValidateIssuer = true,
-        ValidateAudience = true,
-        ValidateLifetime = true,
-        ValidateIssuerSigningKey = true,
-        ValidIssuer = builder.Configuration["Jwt:Issuer"],
-        ValidAudience = builder.Configuration["Jwt:Audience"],
-        // We'll configure the IssuerSigningKey in the OnTokenValidation event when we have access to the service provider
-    };
-
-    // Enable using the access token from the query string for SignalR and other non-header based protocols
-    options.Events = new JwtBearerEvents
-    {
-        OnMessageReceived = context =>
+        options.TokenValidationParameters = new TokenValidationParameters
         {
-            var accessToken = context.Request.Query["access_token"];
-            var path = context.HttpContext.Request.Path;
-
-            if (!string.IsNullOrEmpty(accessToken) &&
-                path.StartsWithSegments("/hubs"))
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            // Accept both Issuer and Audience values to match token generation
+            ValidAudiences = new[]
             {
-                context.Token = accessToken;
+                builder.Configuration["Jwt:Issuer"],
+                builder.Configuration["Jwt:Audience"]
             }
+        };
 
-            return Task.CompletedTask;
-        },
-
-        OnTokenValidated = context =>
+        // Enable using the access token from the query string for SignalR and other non-header based protocols
+        options.Events = new JwtBearerEvents
         {
-            // Get JwksService from the service provider when it's available
-            var jwksService = context.HttpContext.RequestServices.GetRequiredService<JwksService>();
+            OnMessageReceived = context =>
+            {
+                var accessToken = context.Request.Query["access_token"];
+                var path = context.HttpContext.Request.Path;
 
-            // Update the validation parameters with the security key
-            context.Options.TokenValidationParameters.IssuerSigningKey = jwksService.GetSecurityKey();
+                if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs"))
+                {
+                    context.Token = accessToken;
+                }
 
-            return Task.CompletedTask;
-        }
-    };
-});
+                return Task.CompletedTask;
+            }
+        };
+    });
+
+// Provide signing key via options pattern (avoids using service provider inside AddJwtBearer)
+builder.Services.AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme)
+    .Configure<JwksService>((options, jwksService) =>
+    {
+        options.TokenValidationParameters.IssuerSigningKey = jwksService.GetSecurityKey();
+    });
 
 // Add authorization policies
 builder.Services.AddAuthorization(options =>
@@ -120,7 +120,16 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("ApiScope", policy =>
     {
         policy.RequireAuthenticatedUser();
+        policy.AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme);
         policy.RequireClaim("scope", "api");
+    });
+
+    // UserInfo endpoint should authorize via Bearer token with at least 'openid' scope
+    options.AddPolicy("UserInfoScope", policy =>
+    {
+        policy.RequireAuthenticatedUser();
+        policy.AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme);
+        policy.RequireClaim("scope", "openid");
     });
 });
 

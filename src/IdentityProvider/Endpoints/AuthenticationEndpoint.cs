@@ -20,6 +20,7 @@ public static class AuthenticationEndpoint
             AuthorizationService authorizationService,
             ILogger<Program> logger) =>
         {
+            var request1s = context.Request;
             var query = context.Request.Query;
 
             // Parse the request
@@ -95,7 +96,8 @@ public static class AuthenticationEndpoint
                 var redirectUrl = QueryHelpers.AddQueryString(request.RedirectUri!, new Dictionary<string, string>
                 {
                     ["code"] = authCode.Code,
-                    ["state"] = request.State
+                    ["state"] = request.State,
+
                 });
 
                 return Results.Redirect(redirectUrl);
@@ -289,16 +291,20 @@ public static class AuthenticationEndpoint
 
         // Userinfo endpoint
         authGroup.MapGet("/userinfo", async (
+            HttpContext context,
             ClaimsPrincipal user,
             UserManager<IdentityUser> userManager) =>
         {
-            var userId = user.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(userId))
+            // Prefer bearer token identity for userinfo; cookies are not used cross-site
+            var subject = user.FindFirstValue(ClaimTypes.NameIdentifier)
+                         ?? user.FindFirstValue("sub");
+
+            if (string.IsNullOrEmpty(subject))
             {
                 return Results.Unauthorized();
             }
 
-            var identityUser = await userManager.FindByIdAsync(userId);
+            var identityUser = await userManager.FindByIdAsync(subject);
             if (identityUser == null)
             {
                 return Results.Unauthorized();
@@ -308,7 +314,7 @@ public static class AuthenticationEndpoint
 
             var userInfo = new
             {
-                sub = userId,
+                sub = subject,
                 email = identityUser.Email,
                 email_verified = identityUser.EmailConfirmed,
                 preferred_username = identityUser.UserName,
@@ -319,6 +325,7 @@ public static class AuthenticationEndpoint
 
             return Results.Ok(userInfo);
         })
+        .RequireAuthorization("UserInfoScope")
         .WithOpenApi(operation =>
         {
             operation.Summary = "OpenID Connect Userinfo Endpoint";

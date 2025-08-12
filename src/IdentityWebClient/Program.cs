@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
+using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -25,7 +26,9 @@ builder.Services.AddAuthentication(options =>
     options.ClientId = builder.Configuration["IdentityProvider:ClientId"];
     options.ClientSecret = builder.Configuration["IdentityProvider:ClientSecret"];
 
+    options.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
     options.ResponseType = OpenIdConnectResponseType.Code;
+
     options.SaveTokens = true;
     options.GetClaimsFromUserInfoEndpoint = true;
     options.UseTokenLifetime = true;
@@ -35,9 +38,15 @@ builder.Services.AddAuthentication(options =>
     options.Scope.Clear();
     options.Scope.Add("openid");
     options.Scope.Add("profile");
-    options.Scope.Add("email");
-    options.Scope.Add("api");
-    options.Scope.Add("offline_access");
+    // options.Scope.Add("email");
+    // options.Scope.Add("api");
+    // options.Scope.Add("offline_access");
+
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidIssuer = builder.Configuration["IdentityProvider:Authority"],
+        ValidateIssuer = true,
+    };
 
     // Map claims
     options.ClaimActions.MapJsonKey("sub", "sub");
