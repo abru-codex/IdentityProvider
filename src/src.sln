@@ -1,0 +1,30 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.2.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IdentityProvider", "IdentityProvider\IdentityProvider.csproj", "{89F1F671-7C9C-6E19-7889-627D78432F54}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IdentityWebClient", "IdentityWebClient\IdentityWebClient.csproj", "{240F0642-AD6A-84EC-0FD7-D0C5A5E5E3C0}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{89F1F671-7C9C-6E19-7889-627D78432F54}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{89F1F671-7C9C-6E19-7889-627D78432F54}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{89F1F671-7C9C-6E19-7889-627D78432F54}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{89F1F671-7C9C-6E19-7889-627D78432F54}.Release|Any CPU.Build.0 = Release|Any CPU
+		{240F0642-AD6A-84EC-0FD7-D0C5A5E5E3C0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{240F0642-AD6A-84EC-0FD7-D0C5A5E5E3C0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{240F0642-AD6A-84EC-0FD7-D0C5A5E5E3C0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{240F0642-AD6A-84EC-0FD7-D0C5A5E5E3C0}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {09AFB3D7-14DC-4642-9AB1-5E2241A9BB0D}
+	EndGlobalSection
+EndGlobal

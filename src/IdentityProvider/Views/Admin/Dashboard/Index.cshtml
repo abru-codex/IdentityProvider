@@ -1,0 +1,269 @@
+@model IdentityProvider.Models.ViewModels.DashboardViewModel
+@{
+    ViewData["Title"] = "Dashboard";
+    Layout = "_AdminLayout";
+}
+
+<div class="row mb-4">
+    <div class="col">
+        <h1 class="h3">Dashboard</h1>
+        <p class="text-muted">Welcome to Identity Provider Admin Panel</p>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-primary h-100">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col">
+                        <div class="text-uppercase text-primary fw-bold small mb-1">Total Users</div>
+                        <div class="h5 mb-0 fw-bold text-gray-800">@Model.TotalUsers</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-people fs-2 text-primary"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-success h-100">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col">
+                        <div class="text-uppercase text-success fw-bold small mb-1">Total Roles</div>
+                        <div class="h5 mb-0 fw-bold text-gray-800">@Model.TotalRoles</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-shield-check fs-2 text-success"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-info h-100">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col">
+                        <div class="text-uppercase text-info fw-bold small mb-1">Active Sessions</div>
+                        <div class="h5 mb-0 fw-bold text-gray-800">@Model.ActiveSessions</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-activity fs-2 text-info"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-warning h-100">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col">
+                        <div class="text-uppercase text-warning fw-bold small mb-1">OAuth Clients</div>
+                        <div class="h5 mb-0 fw-bold text-gray-800">@Model.TotalClients</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-diagram-3 fs-2 text-warning"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts and Recent Users -->
+<div class="row">
+    <!-- User Growth Chart -->
+    <div class="col-xl-8 col-lg-7">
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="bi bi-graph-up me-2"></i>User Growth (Last 7 Days)
+            </div>
+            <div class="card-body">
+                <canvas id="userGrowthChart" style="height: 300px;"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Token Statistics -->
+    <div class="col-xl-4 col-lg-5">
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="bi bi-key me-2"></i>Token Statistics
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span>Tokens Issued</span>
+                        <span class="badge bg-primary">@Model.TokensIssued</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span>Active Refresh Tokens</span>
+                        <span class="badge bg-success">@Model.ActiveSessions</span>
+                    </div>
+                </div>
+                <canvas id="tokenChart" style="height: 200px;"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Users Table -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-clock-history me-2"></i>Recent Users</span>
+                <a href="/Admin/Users" class="btn btn-sm btn-primary">View All</a>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Username</th>
+                                <th>Email</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var user in Model.RecentUsers)
+                            {
+                                <tr>
+                                    <td>@user.UserName</td>
+                                    <td>@user.Email</td>
+                                    <td>
+                                        @if (user.EmailConfirmed)
+                                        {
+                                            <span class="badge bg-success">Verified</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-warning">Unverified</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <a href="/Admin/Users/Details/@user.Id" class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-eye"></i> View
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-lightning me-2"></i>Quick Actions
+            </div>
+            <div class="card-body">
+                <a href="/Admin/Users/Create" class="btn btn-primary me-2 mb-2">
+                    <i class="bi bi-person-plus"></i> Add User
+                </a>
+                <a href="/Admin/Roles/Create" class="btn btn-success me-2 mb-2">
+                    <i class="bi bi-shield-plus"></i> Add Role
+                </a>
+                <a href="/Admin/Clients/Create" class="btn btn-info me-2 mb-2">
+                    <i class="bi bi-plus-circle"></i> Add OAuth Client
+                </a>
+                <a href="/api/auth/.well-known/openid-configuration" target="_blank" class="btn btn-secondary mb-2">
+                    <i class="bi bi-file-code"></i> View OpenID Config
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // User Growth Chart
+        var ctx = document.getElementById('userGrowthChart').getContext('2d');
+        var userGrowthChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [@Html.Raw(string.Join(",", Model.UserGrowth.Select(d => $"'{d.Date}'")))],
+                datasets: [{
+                    label: 'Users',
+                    data: [@string.Join(",", Model.UserGrowth.Select(d => d.Count))],
+                    borderColor: 'rgb(102, 126, 234)',
+                    backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                }
+            }
+        });
+
+        // Token Chart (Pie)
+        var tokenCtx = document.getElementById('tokenChart').getContext('2d');
+        var tokenChart = new Chart(tokenCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Active Tokens', 'Expired Tokens'],
+                datasets: [{
+                    data: [@Model.ActiveSessions, @(Model.TokensIssued - Model.ActiveSessions)],
+                    backgroundColor: [
+                        'rgba(40, 167, 69, 0.8)',
+                        'rgba(220, 53, 69, 0.8)'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    </script>
+
+    <style>
+        .border-left-primary {
+            border-left: 4px solid #667eea !important;
+        }
+        .border-left-success {
+            border-left: 4px solid #28a745 !important;
+        }
+        .border-left-info {
+            border-left: 4px solid #17a2b8 !important;
+        }
+        .border-left-warning {
+            border-left: 4px solid #ffc107 !important;
+        }
+    </style>
+}

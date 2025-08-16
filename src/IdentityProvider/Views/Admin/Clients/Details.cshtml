@@ -1,0 +1,391 @@
+@model IdentityProvider.Models.ViewModels.ClientDetailsViewModel
+@{
+    ViewData["Title"] = "Client Details";
+    Layout = "_AdminLayout";
+}
+
+<!-- Breadcrumb Navigation -->
+<nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/Admin" class="text-decoration-none">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="/Admin/Clients" class="text-decoration-none">OAuth Clients</a></li>
+        <li class="breadcrumb-item active" aria-current="page">@Model.ClientName</li>
+    </ol>
+</nav>
+
+<div class="row">
+    <div class="col-lg-8">
+        <!-- Basic Information -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div>
+                    <h4 class="mb-0">
+                        <i class="bi bi-diagram-3"></i> @Model.ClientName
+                    </h4>
+                    <p class="text-muted mb-0 mt-1">OAuth 2.0 / OpenID Connect Client Details</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="/Admin/Clients/Edit/@Model.ClientId" class="btn btn-outline-primary btn-sm">
+                        <i class="bi bi-pencil"></i> Edit
+                    </a>
+                    <button type="button" class="btn btn-outline-danger btn-sm" onclick="confirmDelete('@Model.ClientId', '@Model.ClientName')">
+                        <i class="bi bi-trash"></i> Delete
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="text-primary mb-3">
+                            <i class="bi bi-info-circle"></i> Basic Information
+                        </h6>
+                        <dl class="row">
+                            <dt class="col-sm-4">Client ID:</dt>
+                            <dd class="col-sm-8">
+                                <code class="bg-light p-1 rounded">@Model.ClientId</code>
+                                <button class="btn btn-link btn-sm p-0 ms-2" onclick="copyToClipboard('@Model.ClientId')" title="Copy to clipboard">
+                                    <i class="bi bi-clipboard"></i>
+                                </button>
+                            </dd>
+
+                            <dt class="col-sm-4">Client Name:</dt>
+                            <dd class="col-sm-8">@Model.ClientName</dd>
+
+                            <dt class="col-sm-4">Client Secret:</dt>
+                            <dd class="col-sm-8">
+                                <div class="input-group input-group-sm" style="max-width: 300px;">
+                                    <input type="password" id="clientSecret" class="form-control" value="@Model.ClientSecret" readonly />
+                                    <button class="btn btn-outline-secondary" type="button" id="toggleSecret" title="Show/Hide Secret">
+                                        <i class="bi bi-eye" id="toggleIcon"></i>
+                                    </button>
+                                    <button class="btn btn-outline-primary" type="button" onclick="copyToClipboard('@Model.ClientSecret')" title="Copy to clipboard">
+                                        <i class="bi bi-clipboard"></i>
+                                    </button>
+                                </div>
+                                <div class="mt-2">
+                                    <button type="button" class="btn btn-warning btn-sm" id="regenerateSecret" onclick="confirmRegenerateSecret()">
+                                        <i class="bi bi-arrow-clockwise"></i> Regenerate Secret
+                                    </button>
+                                </div>
+                            </dd>
+                        </dl>
+                    </div>
+
+                    <div class="col-md-6">
+                        <h6 class="text-primary mb-3">
+                            <i class="bi bi-shield-lock"></i> Security Settings
+                        </h6>
+                        <div class="d-flex flex-wrap gap-2 mb-3">
+                            @if (Model.RequirePkce)
+                            {
+                                <span class="badge bg-success fs-6">
+                                    <i class="bi bi-shield-check"></i> PKCE Required
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-warning fs-6">
+                                    <i class="bi bi-shield-exclamation"></i> PKCE Not Required
+                                </span>
+                            }
+
+                            @if (Model.AllowOfflineAccess)
+                            {
+                                <span class="badge bg-primary fs-6">
+                                    <i class="bi bi-arrow-clockwise"></i> Refresh Tokens Enabled
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary fs-6">
+                                    <i class="bi bi-x-circle"></i> No Refresh Tokens
+                                </span>
+                            }
+                        </div>
+
+                        <dl class="row">
+                            <dt class="col-sm-6">Access Token Lifetime:</dt>
+                            <dd class="col-sm-6">
+                                <span class="badge bg-info">
+                                    <i class="bi bi-clock"></i> @Model.AccessTokenLifetimeMinutes minutes
+                                </span>
+                            </dd>
+
+                            <dt class="col-sm-6">Refresh Token Lifetime:</dt>
+                            <dd class="col-sm-6">
+                                <span class="badge bg-info">
+                                    <i class="bi bi-calendar"></i> @Model.RefreshTokenLifetimeDays days
+                                </span>
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- URI Configuration -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-link-45deg"></i> URI Configuration
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="text-primary">Redirect URIs</h6>
+                        @if (Model.RedirectUris.Any())
+                        {
+                            <ul class="list-group list-group-flush">
+                                @foreach (var uri in Model.RedirectUris)
+                                {
+                                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                        <code class="text-break">@uri</code>
+                                        <button class="btn btn-link btn-sm p-0" onclick="copyToClipboard('@uri')" title="Copy to clipboard">
+                                            <i class="bi bi-clipboard"></i>
+                                        </button>
+                                    </li>
+                                }
+                            </ul>
+                        }
+                        else
+                        {
+                            <p class="text-muted">No redirect URIs configured</p>
+                        }
+                    </div>
+
+                    <div class="col-md-6">
+                        <h6 class="text-primary">Post Logout Redirect URIs</h6>
+                        @if (Model.PostLogoutRedirectUris.Any())
+                        {
+                            <ul class="list-group list-group-flush">
+                                @foreach (var uri in Model.PostLogoutRedirectUris)
+                                {
+                                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                        <code class="text-break">@uri</code>
+                                        <button class="btn btn-link btn-sm p-0" onclick="copyToClipboard('@uri')" title="Copy to clipboard">
+                                            <i class="bi bi-clipboard"></i>
+                                        </button>
+                                    </li>
+                                }
+                            </ul>
+                        }
+                        else
+                        {
+                            <p class="text-muted">No post logout redirect URIs configured</p>
+                        }
+                    </div>
+                </div>
+
+                @if (Model.AllowedCorsOrigins.Any())
+                {
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <h6 class="text-primary">Allowed CORS Origins</h6>
+                            <ul class="list-group list-group-flush">
+                                @foreach (var origin in Model.AllowedCorsOrigins)
+                                {
+                                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                        <code class="text-break">@origin</code>
+                                        <button class="btn btn-link btn-sm p-0" onclick="copyToClipboard('@origin')" title="Copy to clipboard">
+                                            <i class="bi bi-clipboard"></i>
+                                        </button>
+                                    </li>
+                                }
+                            </ul>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Scopes -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-key"></i> Allowed Scopes
+                </h5>
+            </div>
+            <div class="card-body">
+                @if (Model.AllowedScopes.Any())
+                {
+                    <div class="d-flex flex-wrap gap-2">
+                        @foreach (var scope in Model.AllowedScopes)
+                        {
+                            <span class="badge bg-info fs-6">
+                                <code class="text-white">@scope</code>
+                            </span>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <p class="text-muted mb-0">No scopes configured</p>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <!-- Quick Actions -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="bi bi-lightning"></i> Quick Actions
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="/Admin/Clients/Edit/@Model.ClientId" class="btn btn-primary">
+                        <i class="bi bi-pencil"></i> Edit Configuration
+                    </a>
+                    <button type="button" class="btn btn-warning" onclick="confirmRegenerateSecret()">
+                        <i class="bi bi-arrow-clockwise"></i> Regenerate Secret
+                    </button>
+                    <hr>
+                    <button type="button" class="btn btn-outline-danger" onclick="confirmDelete('@Model.ClientId', '@Model.ClientName')">
+                        <i class="bi bi-trash"></i> Delete Client
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Integration Help -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="bi bi-question-circle"></i> Integration Help
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <h6><i class="bi bi-info-circle"></i> Endpoints</h6>
+                    <ul class="mb-0 small">
+                        <li><strong>Authorization:</strong> <code>/api/auth/authorize</code></li>
+                        <li><strong>Token:</strong> <code>/api/auth/token</code></li>
+                        <li><strong>UserInfo:</strong> <code>/api/auth/userinfo</code></li>
+                        <li><strong>Discovery:</strong> <code>/api/auth/.well-known/openid-configuration</code></li>
+                    </ul>
+                </div>
+
+                <div class="alert alert-warning">
+                    <h6><i class="bi bi-exclamation-triangle"></i> Security Notes</h6>
+                    <ul class="mb-0 small">
+                        <li>Keep client secret secure</li>
+                        <li>Use HTTPS for all URIs</li>
+                        <li>Validate redirect URIs exactly</li>
+                        <li>Monitor token usage regularly</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete the client <strong id="deleteClientName"></strong>?</p>
+                <div class="alert alert-danger">
+                    <i class="bi bi-exclamation-triangle"></i> This action cannot be undone. Any applications using this client will no longer be able to authenticate.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="deleteForm" method="post" style="display: inline;">
+                    <button type="submit" class="btn btn-danger">Delete Client</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Regenerate Secret Confirmation Modal -->
+<div class="modal fade" id="regenerateSecretModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Regenerate Client Secret</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to regenerate the client secret for <strong>@Model.ClientName</strong>?</p>
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle"></i> The current secret will immediately stop working. You'll need to update all applications using this client.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form asp-action="RegenerateSecret" asp-route-id="@Model.ClientId" method="post" style="display: inline;">
+                    <button type="submit" class="btn btn-warning">Regenerate Secret</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Toggle client secret visibility
+        document.getElementById('toggleSecret').addEventListener('click', function() {
+            const secretInput = document.getElementById('clientSecret');
+            const toggleIcon = document.getElementById('toggleIcon');
+            
+            if (secretInput.type === 'password') {
+                secretInput.type = 'text';
+                toggleIcon.className = 'bi bi-eye-slash';
+            } else {
+                secretInput.type = 'password';
+                toggleIcon.className = 'bi bi-eye';
+            }
+        });
+
+        // Copy to clipboard function
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(function() {
+                // Show temporary success message
+                const toast = document.createElement('div');
+                toast.className = 'toast show position-fixed top-0 end-0 m-3';
+                toast.setAttribute('role', 'alert');
+                toast.innerHTML = `
+                    <div class="toast-header bg-success text-white">
+                        <i class="bi bi-check-circle me-2"></i>
+                        <strong class="me-auto">Copied!</strong>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+                    </div>
+                    <div class="toast-body">
+                        Text copied to clipboard
+                    </div>
+                `;
+                document.body.appendChild(toast);
+                
+                // Auto-remove after 3 seconds
+                setTimeout(() => {
+                    toast.remove();
+                }, 3000);
+            }).catch(function(err) {
+                console.error('Failed to copy text: ', err);
+                alert('Failed to copy to clipboard');
+            });
+        }
+
+        // Delete confirmation
+        function confirmDelete(clientId, clientName) {
+            document.getElementById('deleteClientName').textContent = clientName;
+            document.getElementById('deleteForm').action = '/Admin/Clients/Delete/' + clientId;
+            new bootstrap.Modal(document.getElementById('deleteModal')).show();
+        }
+
+        // Regenerate secret confirmation
+        function confirmRegenerateSecret() {
+            new bootstrap.Modal(document.getElementById('regenerateSecretModal')).show();
+        }
+    </script>
+}

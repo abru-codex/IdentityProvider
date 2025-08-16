@@ -148,6 +148,9 @@ builder.Services.AddCors(options =>
     });
 });
 
+builder.Services.AddRazorPages();
+builder.Services.AddControllersWithViews();
+
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 builder.Services.AddEndpointsApiExplorer();
@@ -169,6 +172,18 @@ app.UseCors("DefaultCorsPolicy");
 // Authentication & Authorization middleware
 app.UseAuthentication();
 app.UseAuthorization();
+
+// Map Razor Pages
+app.MapRazorPages();
+
+// Map MVC Controllers
+app.MapControllerRoute(
+    name: "admin",
+    pattern: "Admin/{controller=Dashboard}/{action=Index}/{id?}");
+
+app.MapControllerRoute(
+    name: "default",
+    pattern: "{controller=Home}/{action=Index}/{id?}");
 
 // Map endpoints
 app.MapAuthenticationEndpoint();

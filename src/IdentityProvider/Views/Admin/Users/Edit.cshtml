@@ -1,0 +1,322 @@
+@model IdentityProvider.Models.ViewModels.EditUserViewModel
+@{
+    ViewData["Title"] = "Edit User";
+    Layout = "_AdminLayout";
+}
+
+<div class="row mb-4">
+    <div class="col">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="/Admin/Users">Users</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Edit User</li>
+            </ol>
+        </nav>
+        <h1 class="h3">Edit User</h1>
+        <p class="text-muted">Update user information and settings</p>
+    </div>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @TempData["Success"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @TempData["Error"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-person-gear"></i> User Information
+            </div>
+            <div class="card-body">
+                <form asp-action="Edit" method="post" novalidate>
+                    <input asp-for="Id" type="hidden">
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label asp-for="UserName" class="form-label"></label>
+                                <input asp-for="UserName" class="form-control" placeholder="Enter username" autocomplete="username">
+                                <span asp-validation-for="UserName" class="text-danger"></span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label asp-for="Email" class="form-label"></label>
+                                <input asp-for="Email" class="form-control" placeholder="Enter email address" autocomplete="email">
+                                <span asp-validation-for="Email" class="text-danger"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label asp-for="PhoneNumber" class="form-label"></label>
+                                <input asp-for="PhoneNumber" class="form-control" placeholder="Enter phone number" autocomplete="tel">
+                                <span asp-validation-for="PhoneNumber" class="text-danger"></span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label asp-for="AccessFailedCount" class="form-label"></label>
+                                <input asp-for="AccessFailedCount" class="form-control" type="number" min="0">
+                                <span asp-validation-for="AccessFailedCount" class="text-danger"></span>
+                                <div class="form-text">Number of failed login attempts.</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label asp-for="LockoutEnd" class="form-label"></label>
+                                <input asp-for="LockoutEnd" class="form-control" type="datetime-local">
+                                <span asp-validation-for="LockoutEnd" class="text-danger"></span>
+                                <div class="form-text">Leave empty to unlock the user.</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label">User Settings</label>
+                        <div class="border rounded p-3">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-check mb-2">
+                                        <input asp-for="EmailConfirmed" class="form-check-input" type="checkbox">
+                                        <label asp-for="EmailConfirmed" class="form-check-label"></label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input asp-for="PhoneNumberConfirmed" class="form-check-input" type="checkbox">
+                                        <label asp-for="PhoneNumberConfirmed" class="form-check-label"></label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-check mb-2">
+                                        <input asp-for="TwoFactorEnabled" class="form-check-input" type="checkbox">
+                                        <label asp-for="TwoFactorEnabled" class="form-check-label"></label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input asp-for="LockoutEnabled" class="form-check-input" type="checkbox">
+                                        <label asp-for="LockoutEnabled" class="form-check-label"></label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label">Assign Roles</label>
+                        <div class="border rounded p-3">
+                            @if (Model?.AvailableRoles?.Any() == true)
+                            {
+                                <div class="row">
+                                    @foreach (var role in Model.AvailableRoles)
+                                    {
+                                        <div class="col-md-4 col-sm-6">
+                                            <div class="form-check mb-2">
+                                                <input class="form-check-input" type="checkbox" name="SelectedRoles" value="@role" 
+                                                       id="role_@role" @(Model.SelectedRoles.Contains(role) ? "checked" : "")>
+                                                <label class="form-check-label" for="role_@role">
+                                                    @role
+                                                </label>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                            else
+                            {
+                                <p class="text-muted mb-0">No roles available.</p>
+                            }
+                        </div>
+                        <span asp-validation-for="SelectedRoles" class="text-danger"></span>
+                    </div>
+
+                    <div class="row">
+                        <div class="col">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-lg"></i> Update User
+                            </button>
+                            <a href="/Admin/Users" class="btn btn-secondary ms-2">
+                                <i class="bi bi-arrow-left"></i> Cancel
+                            </a>
+                            <a href="/Admin/Users/Details/@Model.Id" class="btn btn-outline-info ms-2">
+                                <i class="bi bi-eye"></i> View Details
+                            </a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-shield-lock"></i> Security Actions
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <button type="button" class="btn btn-outline-warning" onclick="showChangePasswordModal()">
+                        <i class="bi bi-key"></i> Change Password
+                    </button>
+                    
+                    @if (Model?.LockoutEnd != null && Model.LockoutEnd > DateTimeOffset.UtcNow)
+                    {
+                        <form asp-action="Unlock" asp-route-id="@Model.Id" method="post" style="display: inline;">
+                            <button type="submit" class="btn btn-outline-success w-100">
+                                <i class="bi bi-unlock"></i> Unlock User
+                            </button>
+                        </form>
+                    }
+                    else
+                    {
+                        <button type="button" class="btn btn-outline-danger" onclick="showLockUserModal()">
+                            <i class="bi bi-lock"></i> Lock User
+                        </button>
+                    }
+                </div>
+                
+                <hr>
+                
+                <h6 class="card-subtitle mb-2 text-muted">Quick Info</h6>
+                <p class="card-text small">
+                    <strong>User ID:</strong> @Model?.Id?.Substring(0, 8)...<br>
+                    <strong>Last Failed Count:</strong> @Model?.AccessFailedCount<br>
+                    <strong>2FA:</strong> @(Model?.TwoFactorEnabled == true ? "Enabled" : "Disabled")
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Change Password Modal -->
+<div class="modal fade" id="changePasswordModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Change Password</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form asp-action="ChangePassword" method="post">
+                <input type="hidden" name="UserId" value="@Model?.Id">
+                <input type="hidden" name="UserEmail" value="@Model?.Email">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">New Password</label>
+                        <div class="input-group">
+                            <input name="NewPassword" type="password" class="form-control" required minlength="8">
+                            <button class="btn btn-outline-secondary" type="button" onclick="toggleModalPassword('NewPassword')">
+                                <i class="bi bi-eye" id="NewPassword-icon"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Confirm New Password</label>
+                        <div class="input-group">
+                            <input name="ConfirmPassword" type="password" class="form-control" required minlength="8">
+                            <button class="btn btn-outline-secondary" type="button" onclick="toggleModalPassword('ConfirmPassword')">
+                                <i class="bi bi-eye" id="ConfirmPassword-icon"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-warning">Change Password</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Lock User Modal -->
+<div class="modal fade" id="lockUserModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Lock User</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form asp-action="Lock" method="post">
+                <input type="hidden" name="Id" value="@Model?.Id">
+                <div class="modal-body">
+                    <p>Are you sure you want to lock user <strong>@Model?.UserName</strong>?</p>
+                    <div class="mb-3">
+                        <label class="form-label">Lock until (optional)</label>
+                        <input name="LockoutEnd" type="datetime-local" class="form-control">
+                        <div class="form-text">Leave empty for indefinite lockout.</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger">Lock User</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    
+    <script>
+        function showChangePasswordModal() {
+            new bootstrap.Modal(document.getElementById('changePasswordModal')).show();
+        }
+
+        function showLockUserModal() {
+            new bootstrap.Modal(document.getElementById('lockUserModal')).show();
+        }
+
+        function toggleModalPassword(fieldName) {
+            const field = document.querySelector(`input[name="${fieldName}"]`);
+            const icon = document.getElementById(fieldName + '-icon');
+            
+            if (field.type === 'password') {
+                field.type = 'text';
+                icon.className = 'bi bi-eye-slash';
+            } else {
+                field.type = 'password';
+                icon.className = 'bi bi-eye';
+            }
+        }
+
+        // Form validation feedback
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.querySelector('form[asp-action="Edit"]');
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    if (!form.checkValidity()) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                    }
+                    form.classList.add('was-validated');
+                });
+            }
+
+            // Set datetime-local input to current user's lockout time if it exists
+            const lockoutInput = document.querySelector('input[asp-for="LockoutEnd"]');
+            if (lockoutInput && lockoutInput.value) {
+                // Convert the datetime to local timezone for the input
+                const date = new Date(lockoutInput.value);
+                if (!isNaN(date.getTime())) {
+                    lockoutInput.value = date.toISOString().slice(0, 16);
+                }
+            }
+        });
+    </script>
+}

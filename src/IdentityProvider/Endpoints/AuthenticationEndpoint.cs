@@ -122,46 +122,17 @@ public static class AuthenticationEndpoint
             return operation;
         });
 
-        // Login page route (will typically render a UI, but we'll return a form for testing)
+        // Login page route - redirect to Razor page
         authGroup.MapGet("/login", (string? returnUrl) =>
         {
-            var loginForm = $@"
-                <html>
-                <head>
-                    <title>Login</title>
-                    <style>
-                        body {{ font-family: Arial, sans-serif; margin: 0; padding: 20px; }}
-                        form {{ max-width: 400px; margin: 0 auto; }}
-                        .form-group {{ margin-bottom: 15px; }}
-                        label {{ display: block; margin-bottom: 5px; }}
-                        input {{ width: 100%; padding: 8px; box-sizing: border-box; }}
-                        button {{ padding: 10px 15px; background: #007bff; color: white; border: none; cursor: pointer; }}
-                    </style>
-                </head>
-                <body>
-                    <form method='post' action='/api/auth/login'>
-                        <h2>Sign In</h2>
-                        <div class='form-group'>
-                            <label for='username'>Email:</label>
-                            <input type='email' id='username' name='username' required />
-                        </div>
-                        <div class='form-group'>
-                            <label for='password'>Password:</label>
-                            <input type='password' id='password' name='password' required />
-                        </div>
-                        <input type='hidden' name='returnUrl' value='{returnUrl}' />
-                        <button type='submit'>Sign In</button>
-                    </form>
-                </body>
-                </html>
-            ";
-
-            return Results.Content(loginForm, "text/html");
+            // Redirect to the Razor page for login UI
+            var redirectUrl = $"/Login?returnUrl={Uri.EscapeDataString(returnUrl ?? "/")}";
+            return Results.Redirect(redirectUrl);
         })
         .WithOpenApi(operation =>
         {
             operation.Summary = "Login page";
-            operation.Description = "Returns the login form";
+            operation.Description = "Redirects to the login Razor page";
             return operation;
         });
 
