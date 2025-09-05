@@ -1,39 +1,30 @@
+using IdentityProvider.Models.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using IdentityProvider.Models.ViewModels;
 
-namespace IdentityProvider.Controllers.Admin
+namespace IdentityProvider.Areas.Admin.Controllers
 {
     [Authorize(Policy = "AdminOnly")]
     [Route("Admin/[controller]")]
-    public class RolesController : AdminBaseController
+    public class RolesController(
+        UserManager<IdentityUser> userManager,
+        RoleManager<IdentityRole> roleManager,
+        ILogger<AdminBaseController> logger,
+        IHttpClientFactory httpClientFactory,
+        IConfiguration configuration)
+        : AdminBaseController(logger, httpClientFactory, configuration)
     {
-        private readonly UserManager<IdentityUser> _userManager;
-        private readonly RoleManager<IdentityRole> _roleManager;
-
-        public RolesController(
-            UserManager<IdentityUser> userManager,
-            RoleManager<IdentityRole> roleManager,
-            ILogger<AdminBaseController> logger,
-            IHttpClientFactory httpClientFactory,
-            IConfiguration configuration)
-            : base(logger, httpClientFactory, configuration)
-        {
-            _userManager = userManager;
-            _roleManager = roleManager;
-        }
-
         [HttpGet]
         public async Task<IActionResult> Index()
         {
-            var roles = await _roleManager.Roles.ToListAsync();
+            var roles = await roleManager.Roles.ToListAsync();
             var roleViewModels = new List<RoleListViewModel>();
 
             foreach (var role in roles)
             {
-                var usersInRole = await _userManager.GetUsersInRoleAsync(role.Name!);
+                var usersInRole = await userManager.GetUsersInRoleAsync(role.Name!);
                 roleViewModels.Add(new RoleListViewModel
                 {
                     Id = role.Id,
@@ -50,19 +41,19 @@ namespace IdentityProvider.Controllers.Admin
         [HttpGet("Details/{id}")]
         public async Task<IActionResult> Details(string id)
         {
-            var role = await _roleManager.FindByIdAsync(id);
+            var role = await roleManager.FindByIdAsync(id);
             if (role == null)
             {
                 SetErrorMessage("Role not found.");
                 return RedirectToAction(nameof(Index));
             }
 
-            var usersInRole = await _userManager.GetUsersInRoleAsync(role.Name!);
+            var usersInRole = await userManager.GetUsersInRoleAsync(role.Name!);
             var assignedUsers = new List<UserRoleAssignmentViewModel>();
 
             foreach (var user in usersInRole)
             {
-                var otherRoles = await _userManager.GetRolesAsync(user);
+                var otherRoles = await userManager.GetRolesAsync(user);
                 assignedUsers.Add(new UserRoleAssignmentViewModel
                 {
                     UserId = user.Id,
@@ -100,7 +91,7 @@ namespace IdentityProvider.Controllers.Admin
             }
 
             // Check if role already exists
-            var existingRole = await _roleManager.FindByNameAsync(model.Name);
+            var existingRole = await roleManager.FindByNameAsync(model.Name);
             if (existingRole != null)
             {
                 ModelState.AddModelError("Name", "A role with this name already exists.");
@@ -108,7 +99,7 @@ namespace IdentityProvider.Controllers.Admin
             }
 
             var role = new IdentityRole(model.Name);
-            var result = await _roleManager.CreateAsync(role);
+            var result = await roleManager.CreateAsync(role);
 
             if (result.Succeeded)
             {
@@ -127,22 +118,22 @@ namespace IdentityProvider.Controllers.Admin
         [HttpGet("Edit/{id}")]
         public async Task<IActionResult> Edit(string id)
         {
-            var role = await _roleManager.FindByIdAsync(id);
+            var role = await roleManager.FindByIdAsync(id);
             if (role == null)
             {
                 SetErrorMessage("Role not found.");
                 return RedirectToAction(nameof(Index));
             }
 
-            var usersInRole = await _userManager.GetUsersInRoleAsync(role.Name!);
-            var allUsers = await _userManager.Users.ToListAsync();
+            var usersInRole = await userManager.GetUsersInRoleAsync(role.Name!);
+            var allUsers = await userManager.Users.ToListAsync();
             
             var assignedUsers = new List<UserRoleAssignmentViewModel>();
             var availableUsers = new List<UserRoleAssignmentViewModel>();
 
             foreach (var user in allUsers)
             {
-                var userRoles = await _userManager.GetRolesAsync(user);
+                var userRoles = await userManager.GetRolesAsync(user);
                 var isAssigned = usersInRole.Any(u => u.Id == user.Id);
                 
                 var userViewModel = new UserRoleAssignmentViewModel
@@ -184,7 +175,7 @@ namespace IdentityProvider.Controllers.Admin
                 return BadRequest();
             }
 
-            var role = await _roleManager.FindByIdAsync(id);
+            var role = await roleManager.FindByIdAsync(id);
             if (role == null)
             {
                 SetErrorMessage("Role not found.");
@@ -201,7 +192,7 @@ namespace IdentityProvider.Controllers.Admin
             // Check if the new name conflicts with an existing role (excluding current role)
             if (role.Name != model.Name)
             {
-                var existingRole = await _roleManager.FindByNameAsync(model.Name);
+                var existingRole = await roleManager.FindByNameAsync(model.Name);
                 if (existingRole != null && existingRole.Id != role.Id)
                 {
                     ModelState.AddModelError("Name", "A role with this name already exists.");
@@ -213,7 +204,7 @@ namespace IdentityProvider.Controllers.Admin
                 role.NormalizedName = model.Name.ToUpper();
             }
 
-            var result = await _roleManager.UpdateAsync(role);
+            var result = await roleManager.UpdateAsync(role);
 
             if (result.Succeeded)
             {
@@ -233,7 +224,7 @@ namespace IdentityProvider.Controllers.Admin
         [HttpPost("Delete/{id}")]
         public async Task<IActionResult> Delete(string id)
         {
-            var role = await _roleManager.FindByIdAsync(id);
+            var role = await roleManager.FindByIdAsync(id);
             if (role == null)
             {
                 SetErrorMessage("Role not found.");
@@ -241,14 +232,14 @@ namespace IdentityProvider.Controllers.Admin
             }
 
             // Check if any users are assigned to this role
-            var usersInRole = await _userManager.GetUsersInRoleAsync(role.Name!);
+            var usersInRole = await userManager.GetUsersInRoleAsync(role.Name!);
             if (usersInRole.Any())
             {
                 SetErrorMessage($"Cannot delete role '{role.Name}' because it has {usersInRole.Count} assigned user(s). Please remove all users from this role first.");
                 return RedirectToAction(nameof(Details), new { id });
             }
 
-            var result = await _roleManager.DeleteAsync(role);
+            var result = await roleManager.DeleteAsync(role);
 
             if (result.Succeeded)
             {
@@ -265,21 +256,21 @@ namespace IdentityProvider.Controllers.Admin
         [HttpPost("AssignUser/{roleId}")]
         public async Task<IActionResult> AssignUser(string roleId, string userId)
         {
-            var role = await _roleManager.FindByIdAsync(roleId);
-            var user = await _userManager.FindByIdAsync(userId);
+            var role = await roleManager.FindByIdAsync(roleId);
+            var user = await userManager.FindByIdAsync(userId);
 
             if (role == null || user == null)
             {
                 return Json(new { success = false, message = "Role or user not found." });
             }
 
-            var isInRole = await _userManager.IsInRoleAsync(user, role.Name!);
+            var isInRole = await userManager.IsInRoleAsync(user, role.Name!);
             if (isInRole)
             {
                 return Json(new { success = false, message = "User is already assigned to this role." });
             }
 
-            var result = await _userManager.AddToRoleAsync(user, role.Name!);
+            var result = await userManager.AddToRoleAsync(user, role.Name!);
 
             if (result.Succeeded)
             {
@@ -292,21 +283,21 @@ namespace IdentityProvider.Controllers.Admin
         [HttpPost("RemoveUser/{roleId}")]
         public async Task<IActionResult> RemoveUser(string roleId, string userId)
         {
-            var role = await _roleManager.FindByIdAsync(roleId);
-            var user = await _userManager.FindByIdAsync(userId);
+            var role = await roleManager.FindByIdAsync(roleId);
+            var user = await userManager.FindByIdAsync(userId);
 
             if (role == null || user == null)
             {
                 return Json(new { success = false, message = "Role or user not found." });
             }
 
-            var isInRole = await _userManager.IsInRoleAsync(user, role.Name!);
+            var isInRole = await userManager.IsInRoleAsync(user, role.Name!);
             if (!isInRole)
             {
                 return Json(new { success = false, message = "User is not assigned to this role." });
             }
 
-            var result = await _userManager.RemoveFromRoleAsync(user, role.Name!);
+            var result = await userManager.RemoveFromRoleAsync(user, role.Name!);
 
             if (result.Succeeded)
             {
@@ -319,7 +310,7 @@ namespace IdentityProvider.Controllers.Admin
         [HttpPost("ManageUsers/{roleId}")]
         public async Task<IActionResult> ManageUsers(string roleId, List<string> selectedUserIds)
         {
-            var role = await _roleManager.FindByIdAsync(roleId);
+            var role = await roleManager.FindByIdAsync(roleId);
             if (role == null)
             {
                 SetErrorMessage("Role not found.");
@@ -329,17 +320,17 @@ namespace IdentityProvider.Controllers.Admin
             selectedUserIds ??= new List<string>();
 
             // Get current users in role
-            var currentUsersInRole = await _userManager.GetUsersInRoleAsync(role.Name!);
+            var currentUsersInRole = await userManager.GetUsersInRoleAsync(role.Name!);
             var currentUserIds = currentUsersInRole.Select(u => u.Id).ToList();
 
             // Remove users that are no longer selected
             var usersToRemove = currentUserIds.Except(selectedUserIds).ToList();
             foreach (var userId in usersToRemove)
             {
-                var user = await _userManager.FindByIdAsync(userId);
+                var user = await userManager.FindByIdAsync(userId);
                 if (user != null)
                 {
-                    await _userManager.RemoveFromRoleAsync(user, role.Name!);
+                    await userManager.RemoveFromRoleAsync(user, role.Name!);
                 }
             }
 
@@ -347,10 +338,10 @@ namespace IdentityProvider.Controllers.Admin
             var usersToAdd = selectedUserIds.Except(currentUserIds).ToList();
             foreach (var userId in usersToAdd)
             {
-                var user = await _userManager.FindByIdAsync(userId);
+                var user = await userManager.FindByIdAsync(userId);
                 if (user != null)
                 {
-                    await _userManager.AddToRoleAsync(user, role.Name!);
+                    await userManager.AddToRoleAsync(user, role.Name!);
                 }
             }
 
@@ -360,15 +351,15 @@ namespace IdentityProvider.Controllers.Admin
 
         private async Task LoadEditRoleViewModelData(EditRoleViewModel model, IdentityRole role)
         {
-            var usersInRole = await _userManager.GetUsersInRoleAsync(role.Name!);
-            var allUsers = await _userManager.Users.ToListAsync();
+            var usersInRole = await userManager.GetUsersInRoleAsync(role.Name!);
+            var allUsers = await userManager.Users.ToListAsync();
             
             var assignedUsers = new List<UserRoleAssignmentViewModel>();
             var availableUsers = new List<UserRoleAssignmentViewModel>();
 
             foreach (var user in allUsers)
             {
-                var userRoles = await _userManager.GetRolesAsync(user);
+                var userRoles = await userManager.GetRolesAsync(user);
                 var isAssigned = usersInRole.Any(u => u.Id == user.Id);
                 
                 var userViewModel = new UserRoleAssignmentViewModel

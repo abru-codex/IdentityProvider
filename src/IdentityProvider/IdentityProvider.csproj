@@ -20,4 +20,15 @@
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.4" />
   </ItemGroup>
 
+  <ItemGroup>
+    <_ContentIncludedByDefault Remove="Views\UserManagement\Create.cshtml" />
+    <_ContentIncludedByDefault Remove="Views\UserManagement\Details.cshtml" />
+    <_ContentIncludedByDefault Remove="Views\UserManagement\Edit.cshtml" />
+    <_ContentIncludedByDefault Remove="Views\UserManagement\Index.cshtml" />
+    <_ContentIncludedByDefault Remove="Views\RoleManagement\Create.cshtml" />
+    <_ContentIncludedByDefault Remove="Views\RoleManagement\Details.cshtml" />
+    <_ContentIncludedByDefault Remove="Views\RoleManagement\Edit.cshtml" />
+    <_ContentIncludedByDefault Remove="Views\RoleManagement\Index.cshtml" />
+  </ItemGroup>
+
 </Project>

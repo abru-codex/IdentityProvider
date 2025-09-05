@@ -12,18 +12,18 @@ namespace IdentityProvider.Services;
 public class AuthorizationService
 {
     private readonly ApplicationDbContext _dbContext;
-    private readonly IOptions<OpenIdConnectOptions> _oidcOptions;
+    private readonly IOAuthClientService _oauthClientService;
     private readonly TokenService _tokenService;
     private readonly UserManager<IdentityUser> _userManager;
 
     public AuthorizationService(
         ApplicationDbContext dbContext,
-        IOptions<OpenIdConnectOptions> oidcOptions,
+        IOAuthClientService oauthClientService,
         TokenService tokenService,
         UserManager<IdentityUser> userManager)
     {
         _dbContext = dbContext;
-        _oidcOptions = oidcOptions;
+        _oauthClientService = oauthClientService;
         _tokenService = tokenService;
         _userManager = userManager;
     }
@@ -93,34 +93,18 @@ public class AuthorizationService
 
     public async Task<bool> ValidateClientAsync(string clientId, string? clientSecret = null)
     {
-        var client = _oidcOptions.Value.Clients.FirstOrDefault(c => c.ClientId == clientId);
-
-        if (client == null)
-        {
-            return false;
-        }
-
-        // If client secret is provided, validate it
-        if (!string.IsNullOrEmpty(clientSecret))
-        {
-            return client.ClientSecret == clientSecret;
-        }
-
-        // If no client secret is provided, it could be a public client (SPA, mobile app)
-        // where client authentication is optional
-        return true;
+        return await _oauthClientService.ValidateClientAsync(clientId, clientSecret);
     }
 
-    public bool ValidateRedirectUri(string clientId, string redirectUri)
+    public async Task<bool> ValidateRedirectUriAsync(string clientId, string redirectUri)
     {
-        var client = _oidcOptions.Value.Clients.FirstOrDefault(c => c.ClientId == clientId);
-
+        var client = await _oauthClientService.GetClientAsync(clientId);
         if (client == null)
         {
             return false;
         }
 
-        return client.RedirectUris.Contains(redirectUri, StringComparer.OrdinalIgnoreCase);
+        return client.GetRedirectUris().Contains(redirectUri, StringComparer.OrdinalIgnoreCase);
     }
 
     public async Task<(string accessToken, string? idToken, string? refreshToken)> GenerateTokensAsync(

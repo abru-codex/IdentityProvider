@@ -1,34 +1,28 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace IdentityProvider.Controllers.Admin
+namespace IdentityProvider.Areas.Admin.Controllers
 {
     [Authorize(Policy = "AdminOnly")]
     [Area("Admin")]
-    public abstract class AdminBaseController : Controller
+    public abstract class AdminBaseController(
+        ILogger<AdminBaseController> logger,
+        IHttpClientFactory httpClientFactory,
+        IConfiguration configuration)
+        : Controller
     {
-        protected readonly ILogger<AdminBaseController> _logger;
-        protected readonly IHttpClientFactory _httpClientFactory;
-        protected readonly IConfiguration _configuration;
-
-        protected AdminBaseController(
-            ILogger<AdminBaseController> logger,
-            IHttpClientFactory httpClientFactory,
-            IConfiguration configuration)
-        {
-            _logger = logger;
-            _httpClientFactory = httpClientFactory;
-            _configuration = configuration;
-        }
+        protected readonly ILogger<AdminBaseController> Logger = logger;
+        protected readonly IHttpClientFactory HttpClientFactory = httpClientFactory;
+        protected readonly IConfiguration Configuration = configuration;
 
         protected string GetApiBaseUrl()
         {
-            return _configuration["Jwt:Issuer"] ?? "https://localhost:5001";
+            return Configuration["Jwt:Issuer"] ?? "https://localhost:5001";
         }
 
-        protected async Task<HttpClient> GetAuthenticatedHttpClient()
+        protected Task<HttpClient> GetAuthenticatedHttpClient()
         {
-            var client = _httpClientFactory.CreateClient();
+            var client = HttpClientFactory.CreateClient();
             client.BaseAddress = new Uri(GetApiBaseUrl());
             
             // Get the current user's JWT token from the request
@@ -39,7 +33,7 @@ namespace IdentityProvider.Controllers.Admin
                     new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
             }
             
-            return client;
+            return Task.FromResult(client);
         }
 
         protected void SetSuccessMessage(string message)

@@ -1,39 +1,30 @@
+using IdentityProvider.Models.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using IdentityProvider.Models.ViewModels;
 
-namespace IdentityProvider.Controllers.Admin
+namespace IdentityProvider.Areas.Admin.Controllers
 {
     [Authorize(Policy = "AdminOnly")]
     [Route("Admin/[controller]")]
-    public class UsersController : AdminBaseController
+    public class UsersController(
+        UserManager<IdentityUser> userManager,
+        RoleManager<IdentityRole> roleManager,
+        ILogger<AdminBaseController> logger,
+        IHttpClientFactory httpClientFactory,
+        IConfiguration configuration)
+        : AdminBaseController(logger, httpClientFactory, configuration)
     {
-        private readonly UserManager<IdentityUser> _userManager;
-        private readonly RoleManager<IdentityRole> _roleManager;
-
-        public UsersController(
-            UserManager<IdentityUser> userManager,
-            RoleManager<IdentityRole> roleManager,
-            ILogger<AdminBaseController> logger,
-            IHttpClientFactory httpClientFactory,
-            IConfiguration configuration)
-            : base(logger, httpClientFactory, configuration)
-        {
-            _userManager = userManager;
-            _roleManager = roleManager;
-        }
-
         [HttpGet]
         public async Task<IActionResult> Index()
         {
-            var users = await _userManager.Users.ToListAsync();
+            var users = await userManager.Users.ToListAsync();
             var userViewModels = new List<UserListViewModel>();
 
             foreach (var user in users)
             {
-                var roles = await _userManager.GetRolesAsync(user);
+                var roles = await userManager.GetRolesAsync(user);
                 userViewModels.Add(new UserListViewModel
                 {
                     Id = user.Id,
@@ -52,13 +43,13 @@ namespace IdentityProvider.Controllers.Admin
         [HttpGet("Details/{id}")]
         public async Task<IActionResult> Details(string id)
         {
-            var user = await _userManager.FindByIdAsync(id);
+            var user = await userManager.FindByIdAsync(id);
             if (user == null)
             {
                 return NotFound();
             }
 
-            var roles = await _userManager.GetRolesAsync(user);
+            var roles = await userManager.GetRolesAsync(user);
             var viewModel = new UserDetailsViewModel
             {
                 Id = user.Id,
@@ -82,7 +73,7 @@ namespace IdentityProvider.Controllers.Admin
         {
             var viewModel = new CreateUserViewModel
             {
-                AvailableRoles = await _roleManager.Roles.Select(r => r.Name).ToListAsync()
+                AvailableRoles = await roleManager.Roles.Select(r => r.Name).ToListAsync()
             };
             return View(viewModel);
         }
@@ -92,7 +83,7 @@ namespace IdentityProvider.Controllers.Admin
         {
             if (!ModelState.IsValid)
             {
-                model.AvailableRoles = await _roleManager.Roles.Select(r => r.Name).ToListAsync();
+                model.AvailableRoles = await roleManager.Roles.Select(r => r.Name).ToListAsync();
                 return View(model);
             }
 
@@ -104,13 +95,13 @@ namespace IdentityProvider.Controllers.Admin
                 PhoneNumber = model.PhoneNumber
             };
 
-            var result = await _userManager.CreateAsync(user, model.Password);
+            var result = await userManager.CreateAsync(user, model.Password);
             
             if (result.Succeeded)
             {
                 if (model.SelectedRoles != null && model.SelectedRoles.Any())
                 {
-                    await _userManager.AddToRolesAsync(user, model.SelectedRoles);
+                    await userManager.AddToRolesAsync(user, model.SelectedRoles);
                 }
                 
                 TempData["Success"] = "User created successfully!";
@@ -122,21 +113,21 @@ namespace IdentityProvider.Controllers.Admin
                 ModelState.AddModelError(string.Empty, error.Description);
             }
 
-            model.AvailableRoles = await _roleManager.Roles.Select(r => r.Name).ToListAsync();
+            model.AvailableRoles = await roleManager.Roles.Select(r => r.Name).ToListAsync();
             return View(model);
         }
 
         [HttpGet("Edit/{id}")]
         public async Task<IActionResult> Edit(string id)
         {
-            var user = await _userManager.FindByIdAsync(id);
+            var user = await userManager.FindByIdAsync(id);
             if (user == null)
             {
                 return NotFound();
             }
 
-            var userRoles = await _userManager.GetRolesAsync(user);
-            var allRoles = await _roleManager.Roles.Select(r => r.Name).ToListAsync();
+            var userRoles = await userManager.GetRolesAsync(user);
+            var allRoles = await roleManager.Roles.Select(r => r.Name).ToListAsync();
 
             var viewModel = new EditUserViewModel
             {
@@ -165,11 +156,11 @@ namespace IdentityProvider.Controllers.Admin
 
             if (!ModelState.IsValid)
             {
-                model.AvailableRoles = await _roleManager.Roles.Select(r => r.Name).ToListAsync();
+                model.AvailableRoles = await roleManager.Roles.Select(r => r.Name).ToListAsync();
                 return View(model);
             }
 
-            var user = await _userManager.FindByIdAsync(id);
+            var user = await userManager.FindByIdAsync(id);
             if (user == null)
             {
                 return NotFound();
@@ -183,17 +174,17 @@ namespace IdentityProvider.Controllers.Admin
             user.TwoFactorEnabled = model.TwoFactorEnabled;
             user.LockoutEnabled = model.LockoutEnabled;
 
-            var result = await _userManager.UpdateAsync(user);
+            var result = await userManager.UpdateAsync(user);
             
             if (result.Succeeded)
             {
                 // Update roles
-                var currentRoles = await _userManager.GetRolesAsync(user);
-                await _userManager.RemoveFromRolesAsync(user, currentRoles);
+                var currentRoles = await userManager.GetRolesAsync(user);
+                await userManager.RemoveFromRolesAsync(user, currentRoles);
                 
                 if (model.SelectedRoles != null && model.SelectedRoles.Any())
                 {
-                    await _userManager.AddToRolesAsync(user, model.SelectedRoles);
+                    await userManager.AddToRolesAsync(user, model.SelectedRoles);
                 }
                 
                 TempData["Success"] = "User updated successfully!";
@@ -205,20 +196,20 @@ namespace IdentityProvider.Controllers.Admin
                 ModelState.AddModelError(string.Empty, error.Description);
             }
 
-            model.AvailableRoles = await _roleManager.Roles.Select(r => r.Name).ToListAsync();
+            model.AvailableRoles = await roleManager.Roles.Select(r => r.Name).ToListAsync();
             return View(model);
         }
 
         [HttpPost("Delete/{id}")]
         public async Task<IActionResult> Delete(string id)
         {
-            var user = await _userManager.FindByIdAsync(id);
+            var user = await userManager.FindByIdAsync(id);
             if (user == null)
             {
                 return NotFound();
             }
 
-            var result = await _userManager.DeleteAsync(user);
+            var result = await userManager.DeleteAsync(user);
             
             if (result.Succeeded)
             {
@@ -235,14 +226,14 @@ namespace IdentityProvider.Controllers.Admin
         [HttpPost("ResetPassword/{id}")]
         public async Task<IActionResult> ResetPassword(string id, string newPassword)
         {
-            var user = await _userManager.FindByIdAsync(id);
+            var user = await userManager.FindByIdAsync(id);
             if (user == null)
             {
                 return NotFound();
             }
 
-            var token = await _userManager.GeneratePasswordResetTokenAsync(user);
-            var result = await _userManager.ResetPasswordAsync(user, token, newPassword);
+            var token = await userManager.GeneratePasswordResetTokenAsync(user);
+            var result = await userManager.ResetPasswordAsync(user, token, newPassword);
             
             if (result.Succeeded)
             {
@@ -255,7 +246,7 @@ namespace IdentityProvider.Controllers.Admin
         [HttpPost("ToggleLockout/{id}")]
         public async Task<IActionResult> ToggleLockout(string id)
         {
-            var user = await _userManager.FindByIdAsync(id);
+            var user = await userManager.FindByIdAsync(id);
             if (user == null)
             {
                 return NotFound();
@@ -264,13 +255,13 @@ namespace IdentityProvider.Controllers.Admin
             if (user.LockoutEnd != null && user.LockoutEnd > DateTimeOffset.UtcNow)
             {
                 // Unlock user
-                await _userManager.SetLockoutEndDateAsync(user, null);
+                await userManager.SetLockoutEndDateAsync(user, null);
                 TempData["Success"] = "User unlocked successfully!";
             }
             else
             {
                 // Lock user for 30 days
-                await _userManager.SetLockoutEndDateAsync(user, DateTimeOffset.UtcNow.AddDays(30));
+                await userManager.SetLockoutEndDateAsync(user, DateTimeOffset.UtcNow.AddDays(30));
                 TempData["Success"] = "User locked for 30 days!";
             }
 

@@ -14,6 +14,7 @@ public class ApplicationDbContext : IdentityDbContext<IdentityUser>
 
     public DbSet<RefreshToken> RefreshTokens { get; set; } = null!;
     public DbSet<AuthorizationCode> AuthorizationCodes { get; set; } = null!;
+    public DbSet<OAuthClient> OAuthClients { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -33,6 +34,14 @@ public class ApplicationDbContext : IdentityDbContext<IdentityUser>
 
         builder.Entity<AuthorizationCode>()
             .HasIndex(a => a.Code)
+            .IsUnique();
+
+        // Configure OAuthClient
+        builder.Entity<OAuthClient>()
+            .HasKey(c => c.Id);
+
+        builder.Entity<OAuthClient>()
+            .HasIndex(c => c.ClientId)
             .IsUnique();
     }
 }

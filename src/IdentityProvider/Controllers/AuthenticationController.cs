@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using IdentityProvider.Models;
@@ -9,25 +8,13 @@ using Microsoft.AspNetCore.Authorization;
 
 namespace IdentityProvider.Controllers
 {
-    public class AuthenticationController : Controller
+    public class AuthenticationController(
+        UserManager<IdentityUser> userManager,
+        SignInManager<IdentityUser> signInManager,
+        AuthorizationService authorizationService,
+        ILogger<AuthenticationController> logger)
+        : Controller
     {
-        private readonly UserManager<IdentityUser> _userManager;
-        private readonly SignInManager<IdentityUser> _signInManager;
-        private readonly AuthorizationService _authorizationService;
-        private readonly ILogger<AuthenticationController> _logger;
-
-        public AuthenticationController(
-            UserManager<IdentityUser> userManager,
-            SignInManager<IdentityUser> signInManager,
-            AuthorizationService authorizationService,
-            ILogger<AuthenticationController> logger)
-        {
-            _userManager = userManager;
-            _signInManager = signInManager;
-            _authorizationService = authorizationService;
-            _logger = logger;
-        }
-
         [HttpGet]
         public IActionResult Login(string? returnUrl = null)
         {
@@ -46,18 +33,18 @@ namespace IdentityProvider.Controllers
                 return View(model);
             }
 
-            var user = await _userManager.FindByNameAsync(model.Username);
+            var user = await userManager.FindByNameAsync(model.Username);
             if (user == null)
             {
                 ModelState.AddModelError(string.Empty, "Invalid username or password");
                 return View(model);
             }
 
-            var result = await _signInManager.PasswordSignInAsync(model.Username, model.Password, model.RememberMe, lockoutOnFailure: true);
+            var result = await signInManager.PasswordSignInAsync(model.Username, model.Password, model.RememberMe, lockoutOnFailure: true);
 
             if (result.Succeeded)
             {
-                _logger.LogInformation("User {UserName} logged in", model.Username);
+                logger.LogInformation("User {UserName} logged in", model.Username);
 
                 if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
                 {
@@ -69,7 +56,7 @@ namespace IdentityProvider.Controllers
 
             if (result.IsLockedOut)
             {
-                _logger.LogWarning("User {UserName} account locked out", model.Username);
+                logger.LogWarning("User {UserName} account locked out", model.Username);
                 ModelState.AddModelError(string.Empty, "Account is locked out. Please try again later.");
             }
             else
@@ -84,8 +71,8 @@ namespace IdentityProvider.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Logout()
         {
-            await _signInManager.SignOutAsync();
-            _logger.LogInformation("User logged out");
+            await signInManager.SignOutAsync();
+            logger.LogInformation("User logged out");
             return RedirectToAction("Index", "Home");
         }
 
@@ -122,14 +109,14 @@ namespace IdentityProvider.Controllers
             }
 
             // Validate the client
-            if (!await _authorizationService.ValidateClientAsync(model.ClientId))
+            if (!await authorizationService.ValidateClientAsync(model.ClientId))
             {
                 ModelState.AddModelError(string.Empty, "Invalid client ID");
                 return View(model);
             }
 
             // Validate redirect URI
-            if (!_authorizationService.ValidateRedirectUri(model.ClientId, model.RedirectUri!))
+            if (!await authorizationService.ValidateRedirectUriAsync(model.ClientId, model.RedirectUri!))
             {
                 ModelState.AddModelError(string.Empty, "Invalid redirect URI");
                 return View(model);
@@ -151,7 +138,7 @@ namespace IdentityProvider.Controllers
             try
             {
                 var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-                var user = await _userManager.FindByIdAsync(userId!);
+                var user = await userManager.FindByIdAsync(userId!);
 
                 if (user == null)
                 {
@@ -161,7 +148,7 @@ namespace IdentityProvider.Controllers
                 var requestedScopes = model.Scope?.Split(' ') ?? Array.Empty<string>();
 
                 // Create authorization code
-                var authCode = await _authorizationService.CreateAuthorizationCodeAsync(
+                var authCode = await authorizationService.CreateAuthorizationCodeAsync(
                     userId!,
                     model.ClientId,
                     model.RedirectUri!,
@@ -180,7 +167,7 @@ namespace IdentityProvider.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error generating authorization code");
+                logger.LogError(ex, "Error generating authorization code");
                 var redirectWithError = QueryHelpers.AddQueryString(model.RedirectUri!, new Dictionary<string, string>
                 {
                     ["error"] = "server_error",
@@ -203,13 +190,13 @@ namespace IdentityProvider.Controllers
                 return Unauthorized();
             }
 
-            var user = await _userManager.FindByIdAsync(userId);
+            var user = await userManager.FindByIdAsync(userId);
             if (user == null)
             {
                 return Unauthorized();
             }
 
-            var userRoles = await _userManager.GetRolesAsync(user);
+            var userRoles = await userManager.GetRolesAsync(user);
 
             var userInfo = new
             {

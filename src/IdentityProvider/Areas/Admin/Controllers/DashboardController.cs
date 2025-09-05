@@ -1,44 +1,31 @@
+using IdentityProvider.DbContext;
+using IdentityProvider.Models.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using IdentityProvider.DbContext;
-using IdentityProvider.Models.ViewModels;
 
-namespace IdentityProvider.Controllers.Admin
+namespace IdentityProvider.Areas.Admin.Controllers
 {
-    public class DashboardController : AdminBaseController
+    public class DashboardController(
+        UserManager<IdentityUser> userManager,
+        RoleManager<IdentityRole> roleManager,
+        ApplicationDbContext context,
+        IConfiguration configuration,
+        ILogger<AdminBaseController> logger,
+        IHttpClientFactory httpClientFactory)
+        : AdminBaseController(logger, httpClientFactory, configuration)
     {
-        private readonly UserManager<IdentityUser> _userManager;
-        private readonly RoleManager<IdentityRole> _roleManager;
-        private readonly ApplicationDbContext _context;
-        private readonly IConfiguration _configuration;
-
-        public DashboardController(
-            UserManager<IdentityUser> userManager,
-            RoleManager<IdentityRole> roleManager,
-            ApplicationDbContext context,
-            IConfiguration configuration,
-            ILogger<AdminBaseController> logger,
-            IHttpClientFactory httpClientFactory)
-            : base(logger, httpClientFactory, configuration)
-        {
-            _userManager = userManager;
-            _roleManager = roleManager;
-            _context = context;
-            _configuration = configuration;
-        }
-
         [Authorize(Policy = "AdminOnly")]
         public async Task<IActionResult> Index()
         {
             var viewModel = new DashboardViewModel
             {
-                TotalUsers = await _userManager.Users.CountAsync(),
-                TotalRoles = await _roleManager.Roles.CountAsync(),
-                ActiveSessions = await _context.RefreshTokens.Where(rt => !rt.IsRevoked && rt.ExpiresAt > DateTime.UtcNow).CountAsync(),
-                TotalClients = _configuration.GetSection("OpenIdConnect:Clients").Get<List<object>>()?.Count ?? 0,
-                RecentUsers = await _userManager.Users
+                TotalUsers = await userManager.Users.CountAsync(),
+                TotalRoles = await roleManager.Roles.CountAsync(),
+                ActiveSessions = await context.RefreshTokens.Where(rt => !rt.IsRevoked && rt.ExpiresAt > DateTime.UtcNow).CountAsync(),
+                TotalClients = Configuration.GetSection("OpenIdConnect:Clients").Get<List<object>>()?.Count ?? 0,
+                RecentUsers = await userManager.Users
                     .OrderByDescending(u => u.Id)
                     .Take(5)
                     .Select(u => new RecentUserViewModel
@@ -50,7 +37,7 @@ namespace IdentityProvider.Controllers.Admin
                     })
                     .ToListAsync(),
                 UserGrowth = await GetUserGrowthData(),
-                TokensIssued = await _context.RefreshTokens.CountAsync()
+                TokensIssued = await context.RefreshTokens.CountAsync()
             };
 
             return View(viewModel);
@@ -60,7 +47,7 @@ namespace IdentityProvider.Controllers.Admin
         {
             // Get user registration data for the last 7 days
             var sevenDaysAgo = DateTime.UtcNow.AddDays(-7);
-            var users = await _userManager.Users.ToListAsync();
+            var users = await userManager.Users.ToListAsync();
 
             var growthData = new List<UserGrowthData>();
             for (int i = 6; i >= 0; i--)

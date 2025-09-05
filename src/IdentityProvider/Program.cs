@@ -60,6 +60,7 @@ builder.Services.AddSingleton<JwksService>();
 builder.Services.AddScoped<TokenService>();
 builder.Services.AddScoped<DbSeeder>();
 builder.Services.AddScoped<AuthorizationService>();
+builder.Services.AddScoped<IOAuthClientService, OAuthClientService>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddHttpClient();
 
@@ -136,15 +137,13 @@ builder.Services.AddAuthorization(options =>
     });
 });
 
-// Add CORS for SPA clients
+// Add CORS for SPA clients - Initially empty, will be configured dynamically
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("DefaultCorsPolicy", policy =>
     {
-        policy.WithOrigins(builder.Configuration.GetSection("OpenIdConnect:Clients")
-                .Get<List<OpenIdConnectClientOptions>>()
-                ?.SelectMany(c => c.AllowedCorsOrigins)
-                .ToArray() ?? Array.Empty<string>())
+        // Start with localhost for development, will be updated dynamically
+        policy.WithOrigins("http://localhost:3000", "https://localhost:3001")
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials();

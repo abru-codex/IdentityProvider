@@ -1,37 +1,31 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Options;
+using Microsoft.EntityFrameworkCore;
 using IdentityProvider.Models.ViewModels;
-using IdentityProvider.Options;
-using System.Text.Json;
+using IdentityProvider.Models;
+using IdentityProvider.DbContext;
 
-namespace IdentityProvider.Controllers.Admin
+namespace IdentityProvider.Areas.Admin.Controllers
 {
     [Authorize(Policy = "AdminOnly")]
     [Route("Admin/[controller]")]
-    public class ClientsController : AdminBaseController
+    public class ClientsController(
+        IConfiguration configuration,
+        ILogger<AdminBaseController> logger,
+        IHttpClientFactory httpClientFactory,
+        ApplicationDbContext context)
+        : AdminBaseController(logger, httpClientFactory, configuration)
     {
-        private readonly string _configPath;
-
-        public ClientsController(
-            IConfiguration configuration,
-            ILogger<AdminBaseController> logger,
-            IHttpClientFactory httpClientFactory)
-            : base(logger, httpClientFactory, configuration)
-        {
-            _configPath = Path.Combine(Directory.GetCurrentDirectory(), "appsettings.json");
-        }
-
         [HttpGet]
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
-            var clients = GetClients();
+            var clients = await context.OAuthClients.ToListAsync();
             var viewModels = clients.Select(c => new ClientListViewModel
             {
                 ClientId = c.ClientId,
                 ClientName = c.ClientName,
-                RedirectUris = c.RedirectUris,
-                AllowedScopes = c.AllowedScopes,
+                RedirectUris = c.GetRedirectUris(),
+                AllowedScopes = c.GetAllowedScopes(),
                 RequirePkce = c.RequirePkce,
                 AllowOfflineAccess = c.AllowOfflineAccess,
                 AccessTokenLifetimeMinutes = c.AccessTokenLifetimeMinutes
@@ -41,9 +35,9 @@ namespace IdentityProvider.Controllers.Admin
         }
 
         [HttpGet("Details/{clientId}")]
-        public IActionResult Details(string clientId)
+        public async Task<IActionResult> Details(string clientId)
         {
-            var client = GetClient(clientId);
+            var client = await context.OAuthClients.FirstOrDefaultAsync(c => c.ClientId == clientId);
             if (client == null)
             {
                 return NotFound();
@@ -54,10 +48,10 @@ namespace IdentityProvider.Controllers.Admin
                 ClientId = client.ClientId,
                 ClientName = client.ClientName,
                 ClientSecret = client.ClientSecret,
-                RedirectUris = client.RedirectUris,
-                PostLogoutRedirectUris = client.PostLogoutRedirectUris,
-                AllowedCorsOrigins = client.AllowedCorsOrigins,
-                AllowedScopes = client.AllowedScopes,
+                RedirectUris = client.GetRedirectUris(),
+                PostLogoutRedirectUris = client.GetPostLogoutRedirectUris(),
+                AllowedCorsOrigins = client.GetAllowedCorsOrigins(),
+                AllowedScopes = client.GetAllowedScopes(),
                 RequirePkce = client.RequirePkce,
                 AllowOfflineAccess = client.AllowOfflineAccess,
                 AccessTokenLifetimeMinutes = client.AccessTokenLifetimeMinutes,
@@ -82,48 +76,49 @@ namespace IdentityProvider.Controllers.Admin
         }
 
         [HttpPost("Create")]
-        public IActionResult Create(CreateClientViewModel model)
+        public async Task<IActionResult> Create(CreateClientViewModel model)
         {
             if (!ModelState.IsValid)
             {
                 return View(model);
             }
 
-            var clients = GetClients();
-            
             // Check if client ID already exists
-            if (clients.Any(c => c.ClientId.Equals(model.ClientId, StringComparison.OrdinalIgnoreCase)))
+            var existingClient = await context.OAuthClients.FirstOrDefaultAsync(c => c.ClientId == model.ClientId);
+            if (existingClient != null)
             {
                 ModelState.AddModelError("ClientId", "A client with this ID already exists.");
                 return View(model);
             }
 
-            var newClient = new OpenIdConnectClientOptions
+            var newClient = new OAuthClient
             {
                 ClientId = model.ClientId,
                 ClientName = model.ClientName,
                 ClientSecret = model.ClientSecret,
-                RedirectUris = ParseUris(model.RedirectUris),
-                PostLogoutRedirectUris = ParseUris(model.PostLogoutRedirectUris),
-                AllowedCorsOrigins = ParseUris(model.AllowedCorsOrigins),
-                AllowedScopes = model.AllowedScopes ?? new List<string>(),
                 RequirePkce = model.RequirePkce,
                 AllowOfflineAccess = model.AllowOfflineAccess,
                 AccessTokenLifetimeMinutes = model.AccessTokenLifetimeMinutes,
-                RefreshTokenLifetimeDays = model.RefreshTokenLifetimeDays
+                RefreshTokenLifetimeDays = model.RefreshTokenLifetimeDays,
+                CreatedAt = DateTime.UtcNow
             };
 
-            clients.Add(newClient);
-            SaveClients(clients);
+            newClient.SetRedirectUris(ParseUris(model.RedirectUris));
+            newClient.SetPostLogoutRedirectUris(ParseUris(model.PostLogoutRedirectUris));
+            newClient.SetAllowedCorsOrigins(ParseUris(model.AllowedCorsOrigins));
+            newClient.SetAllowedScopes(model.AllowedScopes);
+
+            context.OAuthClients.Add(newClient);
+            await context.SaveChangesAsync();
 
             TempData["Success"] = "Client created successfully!";
             return RedirectToAction(nameof(Index));
         }
 
         [HttpGet("Edit/{clientId}")]
-        public IActionResult Edit(string clientId)
+        public async Task<IActionResult> Edit(string clientId)
         {
-            var client = GetClient(clientId);
+            var client = await context.OAuthClients.FirstOrDefaultAsync(c => c.ClientId == clientId);
             if (client == null)
             {
                 return NotFound();
@@ -134,10 +129,10 @@ namespace IdentityProvider.Controllers.Admin
                 ClientId = client.ClientId,
                 ClientName = client.ClientName,
                 ClientSecret = string.Empty, // Don't show existing secret
-                RedirectUris = string.Join("\n", client.RedirectUris),
-                PostLogoutRedirectUris = string.Join("\n", client.PostLogoutRedirectUris),
-                AllowedCorsOrigins = string.Join("\n", client.AllowedCorsOrigins),
-                AllowedScopes = client.AllowedScopes,
+                RedirectUris = string.Join("\n", client.GetRedirectUris()),
+                PostLogoutRedirectUris = string.Join("\n", client.GetPostLogoutRedirectUris()),
+                AllowedCorsOrigins = string.Join("\n", client.GetAllowedCorsOrigins()),
+                AllowedScopes = client.GetAllowedScopes(),
                 RequirePkce = client.RequirePkce,
                 AllowOfflineAccess = client.AllowOfflineAccess,
                 AccessTokenLifetimeMinutes = client.AccessTokenLifetimeMinutes,
@@ -149,7 +144,7 @@ namespace IdentityProvider.Controllers.Admin
         }
 
         [HttpPost("Edit/{clientId}")]
-        public IActionResult Edit(string clientId, EditClientViewModel model)
+        public async Task<IActionResult> Edit(string clientId, EditClientViewModel model)
         {
             if (clientId != model.OriginalClientId)
             {
@@ -161,71 +156,65 @@ namespace IdentityProvider.Controllers.Admin
                 return View(model);
             }
 
-            var clients = GetClients();
-            var clientIndex = clients.FindIndex(c => c.ClientId == clientId);
-            
-            if (clientIndex == -1)
+            var client = await context.OAuthClients.FirstOrDefaultAsync(c => c.ClientId == clientId);
+            if (client == null)
             {
                 return NotFound();
             }
 
-            var existingClient = clients[clientIndex];
-            
             // Update client properties
-            existingClient.ClientName = model.ClientName;
+            client.ClientName = model.ClientName;
             
             // Only update secret if a new one is provided
             if (!string.IsNullOrWhiteSpace(model.ClientSecret))
             {
-                existingClient.ClientSecret = model.ClientSecret;
+                client.ClientSecret = model.ClientSecret;
             }
             
-            existingClient.RedirectUris = ParseUris(model.RedirectUris);
-            existingClient.PostLogoutRedirectUris = ParseUris(model.PostLogoutRedirectUris);
-            existingClient.AllowedCorsOrigins = ParseUris(model.AllowedCorsOrigins);
-            existingClient.AllowedScopes = model.AllowedScopes ?? new List<string>();
-            existingClient.RequirePkce = model.RequirePkce;
-            existingClient.AllowOfflineAccess = model.AllowOfflineAccess;
-            existingClient.AccessTokenLifetimeMinutes = model.AccessTokenLifetimeMinutes;
-            existingClient.RefreshTokenLifetimeDays = model.RefreshTokenLifetimeDays;
+            client.SetRedirectUris(ParseUris(model.RedirectUris));
+            client.SetPostLogoutRedirectUris(ParseUris(model.PostLogoutRedirectUris));
+            client.SetAllowedCorsOrigins(ParseUris(model.AllowedCorsOrigins));
+            client.SetAllowedScopes(model.AllowedScopes);
+            client.RequirePkce = model.RequirePkce;
+            client.AllowOfflineAccess = model.AllowOfflineAccess;
+            client.AccessTokenLifetimeMinutes = model.AccessTokenLifetimeMinutes;
+            client.RefreshTokenLifetimeDays = model.RefreshTokenLifetimeDays;
+            client.UpdatedAt = DateTime.UtcNow;
 
-            SaveClients(clients);
+            await context.SaveChangesAsync();
 
             TempData["Success"] = "Client updated successfully!";
             return RedirectToAction(nameof(Index));
         }
 
         [HttpPost("Delete/{clientId}")]
-        public IActionResult Delete(string clientId)
+        public async Task<IActionResult> Delete(string clientId)
         {
-            var clients = GetClients();
-            var client = clients.FirstOrDefault(c => c.ClientId == clientId);
-            
+            var client = await context.OAuthClients.FirstOrDefaultAsync(c => c.ClientId == clientId);
             if (client == null)
             {
                 return NotFound();
             }
 
-            clients.Remove(client);
-            SaveClients(clients);
+            context.OAuthClients.Remove(client);
+            await context.SaveChangesAsync();
 
             TempData["Success"] = "Client deleted successfully!";
             return RedirectToAction(nameof(Index));
         }
 
         [HttpPost("RegenerateSecret/{clientId}")]
-        public IActionResult RegenerateSecret(string clientId)
+        public async Task<IActionResult> RegenerateSecret(string clientId)
         {
-            var clients = GetClients();
-            var client = clients.FirstOrDefault(c => c.ClientId == clientId);
-            
+            var client = await context.OAuthClients.FirstOrDefaultAsync(c => c.ClientId == clientId);
             if (client == null)
             {
                 return NotFound();
             }
 
             client.ClientSecret = GenerateClientSecret();
-            SaveClients(clients);
+            client.UpdatedAt = DateTime.UtcNow;
+            await context.SaveChangesAsync();
 
             TempData["Success"] = $"New client secret: {client.ClientSecret}";
             TempData["Warning"] = "Please save this secret securely. It won't be shown again.";
@@ -233,46 +222,6 @@ namespace IdentityProvider.Controllers.Admin
             return RedirectToAction(nameof(Details), new { clientId });
         }
 
-        private List<OpenIdConnectClientOptions> GetClients()
-        {
-            var clientsSection = _configuration.GetSection("OpenIdConnect:Clients");
-            var clients = clientsSection.Get<List<OpenIdConnectClientOptions>>() ?? new List<OpenIdConnectClientOptions>();
-            return clients;
-        }
-
-        private OpenIdConnectClientOptions? GetClient(string clientId)
-        {
-            return GetClients().FirstOrDefault(c => c.ClientId == clientId);
-        }
-
-        private void SaveClients(List<OpenIdConnectClientOptions> clients)
-        {
-            try
-            {
-                var json = System.IO.File.ReadAllText(_configPath);
-                var jsonObj = JsonSerializer.Deserialize<Dictionary<string, object>>(json);
-                
-                if (jsonObj != null)
-                {
-                    var openIdConnectSection = JsonSerializer.Deserialize<Dictionary<string, object>>(jsonObj["OpenIdConnect"].ToString()!);
-                    openIdConnectSection!["Clients"] = clients;
-                    jsonObj["OpenIdConnect"] = openIdConnectSection;
-
-                    var options = new JsonSerializerOptions
-                    {
-                        WriteIndented = true
-                    };
-
-                    var updatedJson = JsonSerializer.Serialize(jsonObj, options);
-                    System.IO.File.WriteAllText(_configPath, updatedJson);
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to save clients to configuration");
-                throw;
-            }
-        }
 
         private List<string> ParseUris(string uris)
         {
