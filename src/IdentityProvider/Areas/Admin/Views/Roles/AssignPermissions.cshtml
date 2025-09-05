@@ -1,0 +1,160 @@
+@model IdentityProvider.Models.ViewModels.AssignPermissionsViewModel
+@{
+    ViewData["Title"] = "Assign Permissions";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="fas fa-shield-alt"></i> Assign Permissions to Role: @Model.RoleName
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form asp-action="AssignPermissions" asp-route-id="@Model.RoleId" method="post">
+                        <input type="hidden" asp-for="RoleId" />
+                        <input type="hidden" asp-for="RoleName" />
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <button type="button" id="selectAllBtn" class="btn btn-outline-primary">
+                                    <i class="fas fa-check-square"></i> Select All
+                                </button>
+                                <button type="button" id="deselectAllBtn" class="btn btn-outline-secondary">
+                                    <i class="fas fa-square"></i> Deselect All
+                                </button>
+                            </div>
+                            <div class="col-md-6 text-right">
+                                <button type="submit" class="btn btn-success">
+                                    <i class="fas fa-save"></i> Save Permissions
+                                </button>
+                                <a href="@Url.Action("Permissions", new { id = Model.RoleId })" class="btn btn-secondary">
+                                    <i class="fas fa-times"></i> Cancel
+                                </a>
+                            </div>
+                        </div>
+
+                        @{
+                            var allPermissions = IdentityProvider.Models.Permissions.PermissionCategories;
+                            var selectedPermissions = Model.SelectedPermissions ?? new List<string>();
+                        }
+
+                        @foreach (var category in allPermissions)
+                        {
+                            <div class="card mb-3">
+                                <div class="card-header">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <h5 class="mb-0">
+                                            <i class="fas fa-folder"></i> @category.Key
+                                        </h5>
+                                        <div>
+                                            <button type="button" 
+                                                    class="btn btn-sm btn-outline-primary select-category-btn"
+                                                    data-category="@category.Key">
+                                                <i class="fas fa-check"></i> Select All in Category
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        @foreach (var permission in category.Value)
+                                        {
+                                            var isChecked = selectedPermissions.Contains(permission);
+                                            var description = IdentityProvider.Models.Permissions.GetPermissionDescription(permission);
+                                            
+                                            <div class="col-md-6 col-lg-4 mb-3">
+                                                <div class="custom-control custom-checkbox">
+                                                    <input type="checkbox" 
+                                                           class="custom-control-input permission-checkbox" 
+                                                           id="permission_@permission.Replace(".", "_")"
+                                                           name="SelectedPermissions" 
+                                                           value="@permission"
+                                                           data-category="@category.Key"
+                                                           @(isChecked ? "checked" : "") />
+                                                    <label class="custom-control-label" for="permission_@permission.Replace(".", "_")">
+                                                        <strong>@permission</strong>
+                                                        <br>
+                                                        <small class="text-muted">@description</small>
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        }
+
+                        <div class="row">
+                            <div class="col-12 text-center">
+                                <button type="submit" class="btn btn-success btn-lg">
+                                    <i class="fas fa-save"></i> Save Permissions
+                                </button>
+                                <a href="@Url.Action("Permissions", new { id = Model.RoleId })" class="btn btn-secondary btn-lg">
+                                    <i class="fas fa-times"></i> Cancel
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Select all permissions
+            $('#selectAllBtn').click(function() {
+                $('.permission-checkbox').prop('checked', true);
+                updateSelectedCount();
+            });
+
+            // Deselect all permissions
+            $('#deselectAllBtn').click(function() {
+                $('.permission-checkbox').prop('checked', false);
+                updateSelectedCount();
+            });
+
+            // Select all in category
+            $('.select-category-btn').click(function() {
+                var category = $(this).data('category');
+                $('[data-category="' + category + '"]').prop('checked', true);
+                updateSelectedCount();
+            });
+
+            // Update selected count when checkboxes change
+            $('.permission-checkbox').change(function() {
+                updateSelectedCount();
+            });
+
+            function updateSelectedCount() {
+                var selectedCount = $('.permission-checkbox:checked').length;
+                var totalCount = $('.permission-checkbox').length;
+                
+                // Update button text to show count
+                $('#selectAllBtn').html('<i class="fas fa-check-square"></i> Select All (' + totalCount + ')');
+                $('#deselectAllBtn').html('<i class="fas fa-square"></i> Deselect All (' + selectedCount + ' selected)');
+            }
+
+            // Initial count update
+            updateSelectedCount();
+
+            // Form validation
+            $('form').submit(function(e) {
+                var selectedCount = $('.permission-checkbox:checked').length;
+                if (selectedCount === 0) {
+                    e.preventDefault();
+                    toastr.warning('Please select at least one permission or continue to remove all permissions.');
+                    return false;
+                }
+                
+                // Show loading state
+                $(this).find('button[type="submit"]').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Saving...');
+            });
+        });
+    </script>
+}

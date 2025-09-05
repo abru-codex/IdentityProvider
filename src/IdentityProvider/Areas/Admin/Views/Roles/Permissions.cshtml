@@ -1,0 +1,174 @@
+@model IdentityProvider.Models.ViewModels.RolePermissionsViewModel
+@{
+    ViewData["Title"] = "Role Permissions";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">
+                        <i class="fas fa-shield-alt"></i> Permissions for Role: @Model.RoleName
+                    </h4>
+                    <div>
+                        <a href="@Url.Action("AssignPermissions", new { id = Model.RoleId })" 
+                           class="btn btn-primary">
+                            <i class="fas fa-edit"></i> Manage Permissions
+                        </a>
+                        <a href="@Url.Action("Details", new { id = Model.RoleId })" 
+                           class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Back to Role
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    @if (Model.AssignedPermissions.Any())
+                    {
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i>
+                            This role has <strong>@Model.AssignedPermissions.Count</strong> permission(s) assigned.
+                        </div>
+
+                        @foreach (var category in Model.PermissionCategories)
+                        {
+                            var categoryPermissions = category.Value.Where(p => p.IsAssigned).ToList();
+                            if (categoryPermissions.Any())
+                            {
+                                <div class="card mb-3">
+                                    <div class="card-header">
+                                        <h5 class="mb-0">
+                                            <i class="fas fa-folder"></i> @category.Key
+                                            <span class="badge badge-primary">@categoryPermissions.Count</span>
+                                        </h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            @foreach (var permission in categoryPermissions)
+                                            {
+                                                <div class="col-md-6 col-lg-4 mb-2">
+                                                    <div class="d-flex justify-content-between align-items-center p-2 border rounded">
+                                                        <div>
+                                                            <strong>@permission.Permission</strong>
+                                                            <br>
+                                                            <small class="text-muted">@permission.Description</small>
+                                                        </div>
+                                                        <button type="button" 
+                                                                class="btn btn-sm btn-outline-danger remove-permission-btn"
+                                                                data-role-id="@Model.RoleId"
+                                                                data-permission="@permission.Permission"
+                                                                title="Remove Permission">
+                                                            <i class="fas fa-times"></i>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        }
+                    }
+                    else
+                    {
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            This role has no permissions assigned.
+                            <a href="@Url.Action("AssignPermissions", new { id = Model.RoleId })" class="alert-link">
+                                Click here to assign permissions.
+                            </a>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            @if (Model.PermissionCategories.Any())
+            {
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-list"></i> Available Permissions
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        @foreach (var category in Model.PermissionCategories)
+                        {
+                            var availablePermissions = category.Value.Where(p => !p.IsAssigned).ToList();
+                            if (availablePermissions.Any())
+                            {
+                                <div class="mb-4">
+                                    <h6 class="text-muted">@category.Key</h6>
+                                    <div class="row">
+                                        @foreach (var permission in availablePermissions)
+                                        {
+                                            <div class="col-md-6 col-lg-4 mb-2">
+                                                <div class="d-flex justify-content-between align-items-center p-2 border rounded bg-light">
+                                                    <div>
+                                                        <strong>@permission.Permission</strong>
+                                                        <br>
+                                                        <small class="text-muted">@permission.Description</small>
+                                                    </div>
+                                                    <button type="button" 
+                                                            class="btn btn-sm btn-outline-success add-permission-btn"
+                                                            data-role-id="@Model.RoleId"
+                                                            data-permission="@permission.Permission"
+                                                            title="Add Permission">
+                                                        <i class="fas fa-plus"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Add permission handler
+            $('.add-permission-btn').click(function() {
+                var roleId = $(this).data('role-id');
+                var permission = $(this).data('permission');
+                var button = $(this);
+                
+                $.post('@Url.Action("AddPermission")/' + roleId, { permission: permission }, function(result) {
+                    if (result.success) {
+                        toastr.success(result.message);
+                        setTimeout(() => location.reload(), 1000);
+                    } else {
+                        toastr.error(result.message);
+                    }
+                }).fail(function() {
+                    toastr.error('An error occurred while adding the permission.');
+                });
+            });
+
+            // Remove permission handler
+            $('.remove-permission-btn').click(function() {
+                var roleId = $(this).data('role-id');
+                var permission = $(this).data('permission');
+                var button = $(this);
+                
+                if (confirm('Are you sure you want to remove this permission?')) {
+                    $.post('@Url.Action("RemovePermission")/' + roleId, { permission: permission }, function(result) {
+                        if (result.success) {
+                            toastr.success(result.message);
+                            setTimeout(() => location.reload(), 1000);
+                        } else {
+                            toastr.error(result.message);
+                        }
+                    }).fail(function() {
+                        toastr.error('An error occurred while removing the permission.');
+                    });
+                }
+            });
+        });
+    </script>
+}

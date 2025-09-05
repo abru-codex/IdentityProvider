@@ -15,6 +15,7 @@ public class ApplicationDbContext : IdentityDbContext<IdentityUser>
     public DbSet<RefreshToken> RefreshTokens { get; set; } = null!;
     public DbSet<AuthorizationCode> AuthorizationCodes { get; set; } = null!;
     public DbSet<OAuthClient> OAuthClients { get; set; } = null!;
+    public DbSet<RolePermission> RolePermissions { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -42,6 +43,14 @@ public class ApplicationDbContext : IdentityDbContext<IdentityUser>
 
         builder.Entity<OAuthClient>()
             .HasIndex(c => c.ClientId)
+            .IsUnique();
+
+        // Configure RolePermission
+        builder.Entity<RolePermission>()
+            .HasKey(rp => rp.Id);
+
+        builder.Entity<RolePermission>()
+            .HasIndex(rp => new { rp.RoleId, rp.Permission })
             .IsUnique();
     }
 }

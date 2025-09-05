@@ -10,6 +10,8 @@ namespace IdentityProvider.Models.ViewModels
         public int UserCount { get; set; }
         public List<string> AssignedUsers { get; set; } = new();
         public string? Description { get; set; }
+        public List<string> Permissions { get; set; } = new();
+        public int PermissionCount { get; set; }
     }
 
     public class RoleDetailsViewModel
@@ -68,5 +70,40 @@ namespace IdentityProvider.Models.ViewModels
         public string RoleName { get; set; } = default!;
         public List<UserRoleAssignmentViewModel> Users { get; set; } = new();
         public List<string> SelectedUserIds { get; set; } = new();
+    }
+
+    // Permission-related ViewModels
+    public class PermissionViewModel
+    {
+        public string Permission { get; set; } = default!;
+        public string Description { get; set; } = default!;
+        public bool IsAssigned { get; set; }
+        public string Category { get; set; } = default!;
+    }
+
+    public class RolePermissionsViewModel
+    {
+        public string RoleId { get; set; } = default!;
+        public string RoleName { get; set; } = default!;
+        public Dictionary<string, List<PermissionViewModel>> PermissionCategories { get; set; } = new();
+        public List<string> AssignedPermissions { get; set; } = new();
+        public int TotalPermissions { get; set; }
+        public int AssignedPermissionsCount { get; set; }
+    }
+
+    public class AssignPermissionsViewModel
+    {
+        public string RoleId { get; set; } = default!;
+        public string RoleName { get; set; } = default!;
+        public List<string> SelectedPermissions { get; set; } = new();
+        public Dictionary<string, List<string>> AvailablePermissions { get; set; } = new();
+    }
+
+    public class PermissionCategoryViewModel
+    {
+        public string Category { get; set; } = default!;
+        public List<PermissionViewModel> Permissions { get; set; } = new();
+        public int AssignedCount { get; set; }
+        public int TotalCount { get; set; }
     }
 }

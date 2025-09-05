@@ -1,3 +1,6 @@
+using IdentityProvider.Authorization;
+using IdentityProvider.DbContext;
+using IdentityProvider.Models;
 using IdentityProvider.Models.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -13,10 +16,12 @@ namespace IdentityProvider.Areas.Admin.Controllers
         RoleManager<IdentityRole> roleManager,
         ILogger<AdminBaseController> logger,
         IHttpClientFactory httpClientFactory,
-        IConfiguration configuration)
+        IConfiguration configuration, 
+        ApplicationDbContext context)
         : AdminBaseController(logger, httpClientFactory, configuration)
     {
         [HttpGet]
+        [RequirePermission(IdentityProvider.Models.Permissions.RoleRead)]
         public async Task<IActionResult> Index()
         {
             var roles = await roleManager.Roles.ToListAsync();
@@ -39,6 +44,7 @@ namespace IdentityProvider.Areas.Admin.Controllers
         }
 
         [HttpGet("Details/{id}")]
+        [RequirePermission(IdentityProvider.Models.Permissions.RoleRead)]
         public async Task<IActionResult> Details(string id)
         {
             var role = await roleManager.FindByIdAsync(id);
@@ -77,12 +83,14 @@ namespace IdentityProvider.Areas.Admin.Controllers
         }
 
         [HttpGet("Create")]
+        [RequirePermission(IdentityProvider.Models.Permissions.RoleCreate)]
         public IActionResult Create()
         {
             return View(new CreateRoleViewModel());
         }
 
         [HttpPost("Create")]
+        [RequirePermission(IdentityProvider.Models.Permissions.RoleCreate)]
         public async Task<IActionResult> Create(CreateRoleViewModel model)
         {
             if (!ModelState.IsValid)
@@ -116,6 +124,7 @@ namespace IdentityProvider.Areas.Admin.Controllers
         }
 
         [HttpGet("Edit/{id}")]
+        [RequirePermission(IdentityProvider.Models.Permissions.RoleUpdate)]
         public async Task<IActionResult> Edit(string id)
         {
             var role = await roleManager.FindByIdAsync(id);
@@ -168,6 +177,7 @@ namespace IdentityProvider.Areas.Admin.Controllers
         }
 
         [HttpPost("Edit/{id}")]
+        [RequirePermission(IdentityProvider.Models.Permissions.RoleUpdate)]
         public async Task<IActionResult> Edit(string id, EditRoleViewModel model)
         {
             if (id != model.Id)
@@ -222,6 +232,7 @@ namespace IdentityProvider.Areas.Admin.Controllers
         }
 
         [HttpPost("Delete/{id}")]
+        [RequirePermission(IdentityProvider.Models.Permissions.RoleDelete)]
         public async Task<IActionResult> Delete(string id)
         {
             var role = await roleManager.FindByIdAsync(id);
@@ -348,6 +359,220 @@ namespace IdentityProvider.Areas.Admin.Controllers
             SetSuccessMessage($"User assignments for role '{role.Name}' updated successfully!");
             return RedirectToAction(nameof(Details), new { id = roleId });
         }
+        
+        // Permission Management Methods
+        [HttpGet("Permissions/{id}")]
+        [RequirePermission(IdentityProvider.Models.Permissions.RoleManagePermissions)]
+        public async Task<IActionResult> Permissions(string id)
+        {
+            var role = await roleManager.FindByIdAsync(id);
+            if (role == null)
+            {
+                SetErrorMessage("Role not found.");
+                return RedirectToAction(nameof(Index));
+            }
+
+            // Get assigned permissions for this role
+            var assignedPermissions = await context.RolePermissions
+                .Where(rp => rp.RoleId == id)
+                .Select(rp => rp.Permission)
+                .ToListAsync();
+
+            var permissionCategories = new Dictionary<string, List<PermissionViewModel>>();
+
+            foreach (var category in IdentityProvider.Models.Permissions.GetCategories())
+            {
+                var categoryPermissions = IdentityProvider.Models.Permissions.GetPermissionsByCategory(category);
+                var permissionViewModels = categoryPermissions.Select(permission => new PermissionViewModel
+                {
+                    Permission = permission,
+                    Description = IdentityProvider.Models.Permissions.GetPermissionDescription(permission),
+                    IsAssigned = assignedPermissions.Contains(permission)
+                }).ToList();
+
+                permissionCategories[category] = permissionViewModels;
+            }
+
+            var viewModel = new RolePermissionsViewModel
+            {
+                RoleId = role.Id,
+                RoleName = role.Name!,
+                PermissionCategories = permissionCategories,
+                AssignedPermissions = assignedPermissions
+            };
+
+            return View(viewModel);
+        }
+
+        [HttpGet("AssignPermissions/{id}")]
+        [RequirePermission(IdentityProvider.Models.Permissions.RoleManagePermissions)]
+        public async Task<IActionResult> AssignPermissions(string id)
+        {
+            var role = await roleManager.FindByIdAsync(id);
+            if (role == null)
+            {
+                SetErrorMessage("Role not found.");
+                return RedirectToAction(nameof(Index));
+            }
+
+            // Get currently assigned permissions
+            var assignedPermissions = await context.RolePermissions
+                .Where(rp => rp.RoleId == id)
+                .Select(rp => rp.Permission)
+                .ToListAsync();
+
+            var viewModel = new AssignPermissionsViewModel
+            {
+                RoleId = role.Id,
+                RoleName = role.Name!,
+                SelectedPermissions = assignedPermissions
+            };
+
+            return View(viewModel);
+        }
+
+        [HttpPost("AssignPermissions/{id}")]
+        [RequirePermission(IdentityProvider.Models.Permissions.RoleManagePermissions)]
+        public async Task<IActionResult> AssignPermissions(string id, AssignPermissionsViewModel model)
+        {
+            if (id != model.RoleId)
+            {
+                return BadRequest();
+            }
+
+            var role = await roleManager.FindByIdAsync(id);
+            if (role == null)
+            {
+                SetErrorMessage("Role not found.");
+                return RedirectToAction(nameof(Index));
+            }
+
+            try
+            {
+                // Start a transaction
+                await using var transaction = await context.Database.BeginTransactionAsync();
+
+                // Remove all existing permissions for this role
+                var existingPermissions = await context.RolePermissions
+                    .Where(rp => rp.RoleId == id)
+                    .ToListAsync();
+
+                context.RolePermissions.RemoveRange(existingPermissions);
+
+                // Add new permissions
+                if (model.SelectedPermissions?.Any() == true)
+                {
+                    var newPermissions = model.SelectedPermissions.Select(permission => new RolePermission
+                    {
+                        RoleId = id,
+                        Permission = permission,
+                        RoleName = role.Name,
+                        CreatedAt = DateTime.UtcNow
+                    }).ToList();
+
+                    await context.RolePermissions.AddRangeAsync(newPermissions);
+                }
+
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                SetSuccessMessage($"Permissions for role '{role.Name}' updated successfully!");
+                return RedirectToAction(nameof(Permissions), new { id });
+            }
+            catch (Exception ex)
+            {
+                SetErrorMessage($"Failed to update permissions: {ex.Message}");
+                return RedirectToAction(nameof(AssignPermissions), new { id });
+            }
+        }
+
+        [HttpPost("AddPermission/{roleId}")]
+        [RequirePermission(IdentityProvider.Models.Permissions.RoleManagePermissions)]
+        public async Task<IActionResult> AddPermission(string roleId, string permission)
+        {
+            var role = await roleManager.FindByIdAsync(roleId);
+            if (role == null)
+            {
+                return Json(new { success = false, message = "Role not found." });
+            }
+
+            // Check if permission is valid
+            if (!IdentityProvider.Models.Permissions.GetAllPermissions().Contains(permission))
+            {
+                return Json(new { success = false, message = "Invalid permission." });
+            }
+
+            // Check if permission is already assigned
+            var existingPermission = await context.RolePermissions
+                .FirstOrDefaultAsync(rp => rp.RoleId == roleId && rp.Permission == permission);
+
+            if (existingPermission != null)
+            {
+                return Json(new { success = false, message = "Permission is already assigned to this role." });
+            }
+
+            try
+            {
+                var rolePermission = new RolePermission
+                {
+                    RoleId = roleId,
+                    Permission = permission,
+                    RoleName = role.Name,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                context.RolePermissions.Add(rolePermission);
+                await context.SaveChangesAsync();
+
+                return Json(new { success = true, message = $"Permission '{permission}' added to role '{role.Name}' successfully!" });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = $"Failed to add permission: {ex.Message}" });
+            }
+        }
+
+        [HttpPost("RemovePermission/{roleId}")]
+        [RequirePermission(IdentityProvider.Models.Permissions.RoleManagePermissions)]
+        public async Task<IActionResult> RemovePermission(string roleId, string permission)
+        {
+            var role = await roleManager.FindByIdAsync(roleId);
+            if (role == null)
+            {
+                return Json(new { success = false, message = "Role not found." });
+            }
+
+            var existingPermission = await context.RolePermissions
+                .FirstOrDefaultAsync(rp => rp.RoleId == roleId && rp.Permission == permission);
+
+            if (existingPermission == null)
+            {
+                return Json(new { success = false, message = "Permission is not assigned to this role." });
+            }
+
+            try
+            {
+                context.RolePermissions.Remove(existingPermission);
+                await context.SaveChangesAsync();
+
+                return Json(new { success = true, message = $"Permission '{permission}' removed from role '{role.Name}' successfully!" });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = $"Failed to remove permission: {ex.Message}" });
+            }
+        }
+
+        [HttpGet("GetRolePermissions/{roleId}")]
+        public async Task<IActionResult> GetRolePermissions(string roleId)
+        {
+            var permissions = await context.RolePermissions
+                .Where(rp => rp.RoleId == roleId)
+                .Select(rp => new { rp.Permission, Description = IdentityProvider.Models.Permissions.GetPermissionDescription(rp.Permission) })
+                .ToListAsync();
+
+            return Json(permissions);
+        }
 
         private async Task LoadEditRoleViewModelData(EditRoleViewModel model, IdentityRole role)
         {
@@ -386,3 +611,6 @@ namespace IdentityProvider.Areas.Admin.Controllers
         }
     }
 }
+
+
+

@@ -1,10 +1,10 @@
-using System.Security.Claims;
-using System.Text;
+using IdentityProvider.Authorization;
 using IdentityProvider.DbContext;
 using IdentityProvider.Options;
 using IdentityProvider.Services;
 using IdentityProvider.Validation;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -45,22 +45,22 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.LoginPath = "/Authentication/Login";
     options.LogoutPath = "/Authentication/Logout";
     options.AccessDeniedPath = "/Home/AccessDenied";
-});
 
+});
 // Configure FluentValidation
 builder.Services.AddFluentValidation();
 
 // Register options
 builder.Services.Configure<JwtOption>(builder.Configuration.GetSection("Jwt"));
 builder.Services.Configure<DefaultAdminOption>(builder.Configuration.GetSection("DefaultAdmin"));
-builder.Services.Configure<OpenIdConnectOptions>(builder.Configuration.GetSection("OpenIdConnect"));
 
-// Register services
 builder.Services.AddSingleton<JwksService>();
+builder.Services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
 builder.Services.AddScoped<TokenService>();
 builder.Services.AddScoped<DbSeeder>();
 builder.Services.AddScoped<AuthorizationService>();
 builder.Services.AddScoped<IOAuthClientService, OAuthClientService>();
+builder.Services.AddScoped<IRolePermissionService, RolePermissionService>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddHttpClient();
 
@@ -120,6 +120,16 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("AuthenticatedUsers", policy =>
         policy.RequireAuthenticatedUser());
 
+    // Permission-based policies - dynamically create policies for each permission
+    foreach (var permission in typeof(IdentityProvider.Models.Permissions).GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)
+        .Where(f => f.IsLiteral && !f.IsInitOnly && f.FieldType == typeof(string))
+        .Select(f => f.GetValue(null)?.ToString())
+        .Where(value => !string.IsNullOrEmpty(value)))
+    {
+        options.AddPolicy($"Permission:{permission}", policy =>
+            policy.Requirements.Add(new IdentityProvider.Authorization.PermissionRequirement(permission!)));
+    }
+
     // Scope-based policies for API access
     options.AddPolicy("ApiScope", policy =>
     {
@@ -137,7 +147,6 @@ builder.Services.AddAuthorization(options =>
     });
 });
 
-// Add CORS for SPA clients - Initially empty, will be configured dynamically
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("DefaultCorsPolicy", policy =>
@@ -180,5 +189,4 @@ app.MapControllerRoute(
 
 // Seed the database
 await app.SeedDatabaseAsync();
-
 app.Run();

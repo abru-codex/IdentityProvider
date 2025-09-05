@@ -51,7 +51,8 @@
                         <th>Role Name</th>
                         <th>Description</th>
                         <th>Assigned Users</th>
-                        <th width="150">Actions</th>
+                        <th>Permissions</th>
+                        <th width="180">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -98,6 +99,25 @@
                                 else
                                 {
                                     <span class="text-muted">No users assigned</span>
+                                }
+                            </td>
+                            <td>
+                                @if (role.Permissions.Any())
+                                {
+                                    <div class="d-flex align-items-center flex-wrap gap-1">
+                                        @foreach (var permission in role.Permissions.Take(3))
+                                        {
+                                            <span class="badge bg-light text-dark border">@permission</span>
+                                        }
+                                        @if (role.Permissions.Count > 3)
+                                        {
+                                            <span class="badge bg-secondary status-badge">+@(role.Permissions.Count - 3) more</span>
+                                        }
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">No permissions assigned</span>
                                 }
                             </td>
                             <td>
