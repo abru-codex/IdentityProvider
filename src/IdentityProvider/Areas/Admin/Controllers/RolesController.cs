@@ -2,6 +2,7 @@ using IdentityProvider.Authorization;
 using IdentityProvider.DbContext;
 using IdentityProvider.Models;
 using IdentityProvider.Models.ViewModels;
+using IdentityProvider.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -17,26 +18,53 @@ namespace IdentityProvider.Areas.Admin.Controllers
         ILogger<AdminBaseController> logger,
         IHttpClientFactory httpClientFactory,
         IConfiguration configuration, 
-        ApplicationDbContext context)
+        ApplicationDbContext context,
+        IRolePermissionService rolePermissionService)
         : AdminBaseController(logger, httpClientFactory, configuration)
     {
         [HttpGet]
         [RequirePermission(IdentityProvider.Models.Permissions.RoleRead)]
         public async Task<IActionResult> Index()
         {
+            // Use LINQ to efficiently load all data in batches
             var roles = await roleManager.Roles.ToListAsync();
+            
+            // Get all role IDs for batch permission loading
+            var roleIds = roles.Select(r => r.Id).ToList();
+            
+            // Load all permissions for all roles in one query using LINQ
+            var rolePermissions = await context.RolePermissions
+                .Where(rp => roleIds.Contains(rp.RoleId))
+                .GroupBy(rp => rp.RoleId)
+                .Select(g => new { 
+                    RoleId = g.Key, 
+                    Permissions = g.Select(rp => rp.Permission).ToList() 
+                })
+                .ToListAsync();
+            
+            // Create a dictionary for fast lookup
+            var permissionLookup = rolePermissions.ToDictionary(
+                rp => rp.RoleId, 
+                rp => rp.Permissions
+            );
+            
+            // Load all user-role assignments in batches
             var roleViewModels = new List<RoleListViewModel>();
-
+            
             foreach (var role in roles)
             {
                 var usersInRole = await userManager.GetUsersInRoleAsync(role.Name!);
+                var permissions = permissionLookup.GetValueOrDefault(role.Id, new List<string>());
+                
                 roleViewModels.Add(new RoleListViewModel
                 {
                     Id = role.Id,
                     Name = role.Name!,
                     NormalizedName = role.NormalizedName,
                     UserCount = usersInRole.Count,
-                    AssignedUsers = usersInRole.Select(u => u.UserName!).ToList()
+                    AssignedUsers = usersInRole.Select(u => u.UserName!).ToList(),
+                    Permissions = permissions,
+                    PermissionCount = permissions.Count
                 });
             }
 
@@ -611,6 +639,4 @@ namespace IdentityProvider.Areas.Admin.Controllers
         }
     }
 }
-
-
 

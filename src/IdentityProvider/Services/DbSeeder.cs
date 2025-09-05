@@ -15,6 +15,7 @@ public class DbSeeder
     private readonly ILogger<DbSeeder> _logger;
     private readonly DefaultAdminOption _defaultAdminOption;
     private readonly OpenIdConnectOptions _openIdConnectOptions;
+    private readonly IRolePermissionService _rolePermissionService;
 
     public DbSeeder(
         RoleManager<IdentityRole> roleManager,
@@ -22,7 +23,8 @@ public class DbSeeder
         ApplicationDbContext context,
         ILogger<DbSeeder> logger,
         IOptions<DefaultAdminOption> defaultAdminOption,
-        IOptions<OpenIdConnectOptions> openIdConnectOptions)
+        IOptions<OpenIdConnectOptions> openIdConnectOptions,
+        IRolePermissionService rolePermissionService)
     {
         _roleManager = roleManager;
         _userManager = userManager;
@@ -30,6 +32,7 @@ public class DbSeeder
         _logger = logger;
         _defaultAdminOption = defaultAdminOption.Value;
         _openIdConnectOptions = openIdConnectOptions.Value;
+        _rolePermissionService = rolePermissionService;
     }
 
     public async Task SeedAsync()
@@ -38,6 +41,9 @@ public class DbSeeder
         {
             // Create default roles if they don't exist
             await SeedRolesAsync();
+
+            // Seed role permissions
+            await SeedRolePermissionsAsync();
 
             // Create default admin user if not exists
             await SeedAdminUserAsync();
@@ -53,7 +59,7 @@ public class DbSeeder
 
     private async Task SeedRolesAsync()
     {
-        string[] roleNames = { "Admin", "User" };
+        string[] roleNames = { "Admin", "User", "Manager" };
         foreach (var roleName in roleNames)
         {
             if (!await _roleManager.RoleExistsAsync(roleName))
@@ -61,6 +67,140 @@ public class DbSeeder
                 await _roleManager.CreateAsync(new IdentityRole(roleName));
                 _logger.LogInformation("Created role: {Role}", roleName);
             }
+        }
+    }
+
+    private async Task SeedRolePermissionsAsync()
+    {
+        // Get roles
+        var adminRole = await _roleManager.FindByNameAsync("Admin");
+        var userRole = await _roleManager.FindByNameAsync("User");
+        var managerRole = await _roleManager.FindByNameAsync("Manager");
+
+        if (adminRole != null)
+        {
+            await SeedAdminPermissionsAsync(adminRole);
+        }
+
+        if (userRole != null)
+        {
+            await SeedUserPermissionsAsync(userRole);
+        }
+
+        if (managerRole != null)
+        {
+            await SeedManagerPermissionsAsync(managerRole);
+        }
+    }
+
+    private async Task SeedAdminPermissionsAsync(IdentityRole adminRole)
+    {
+        // Admin gets all permissions
+        var allPermissions = new List<string>
+        {
+            // User Management Permissions
+            Permissions.UserRead,
+            Permissions.UserCreate,
+            Permissions.UserUpdate,
+            Permissions.UserDelete,
+            Permissions.UserManageRoles,
+
+            // Role Management Permissions
+            Permissions.RoleRead,
+            Permissions.RoleCreate,
+            Permissions.RoleUpdate,
+            Permissions.RoleDelete,
+            Permissions.RoleManagePermissions,
+
+            // Client Management Permissions
+            Permissions.ClientRead,
+            Permissions.ClientCreate,
+            Permissions.ClientUpdate,
+            Permissions.ClientDelete,
+
+            // Dashboard Permissions
+            Permissions.DashboardView,
+            Permissions.DashboardManage,
+
+            // System Permissions
+            Permissions.SystemSettings,
+            Permissions.SystemLogs,
+
+            // Authentication Permissions
+            Permissions.AuthorizeClients,
+            Permissions.IssueTokens
+        };
+
+        var existingPermissions = await _rolePermissionService.GetRolePermissionsAsync(adminRole.Id);
+        var newPermissions = allPermissions.Except(existingPermissions).ToList();
+
+        if (newPermissions.Any())
+        {
+            foreach (var permission in newPermissions)
+            {
+                await _rolePermissionService.AddPermissionAsync(adminRole.Id, permission, adminRole.Name);
+            }
+            _logger.LogInformation("Added {Count} permissions to Admin role", newPermissions.Count);
+        }
+    }
+
+    private async Task SeedUserPermissionsAsync(IdentityRole userRole)
+    {
+        // Regular users get basic read permissions
+        var userPermissions = new List<string>
+        {
+            Permissions.DashboardView
+        };
+
+        var existingPermissions = await _rolePermissionService.GetRolePermissionsAsync(userRole.Id);
+        var newPermissions = userPermissions.Except(existingPermissions).ToList();
+
+        if (newPermissions.Any())
+        {
+            foreach (var permission in newPermissions)
+            {
+                await _rolePermissionService.AddPermissionAsync(userRole.Id, permission, userRole.Name);
+            }
+            _logger.LogInformation("Added {Count} permissions to User role", newPermissions.Count);
+        }
+    }
+
+    private async Task SeedManagerPermissionsAsync(IdentityRole managerRole)
+    {
+        // Managers get moderate permissions (user management but not system-level)
+        var managerPermissions = new List<string>
+        {
+            // User Management Permissions (except delete)
+            Permissions.UserRead,
+            Permissions.UserCreate,
+            Permissions.UserUpdate,
+            Permissions.UserManageRoles,
+
+            // Role Management Permissions (read only)
+            Permissions.RoleRead,
+
+            // Client Management Permissions (read only)
+            Permissions.ClientRead,
+
+            // Dashboard Permissions
+            Permissions.DashboardView,
+            Permissions.DashboardManage,
+
+            // Authentication Permissions
+            Permissions.AuthorizeClients,
+            Permissions.IssueTokens
+        };
+
+        var existingPermissions = await _rolePermissionService.GetRolePermissionsAsync(managerRole.Id);
+        var newPermissions = managerPermissions.Except(existingPermissions).ToList();
+
+        if (newPermissions.Any())
+        {
+            foreach (var permission in newPermissions)
+            {
+                await _rolePermissionService.AddPermissionAsync(managerRole.Id, permission, managerRole.Name);
+            }
+            _logger.LogInformation("Added {Count} permissions to Manager role", newPermissions.Count);
         }
     }
 

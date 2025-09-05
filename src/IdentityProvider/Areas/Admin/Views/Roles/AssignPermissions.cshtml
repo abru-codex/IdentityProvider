@@ -50,7 +50,7 @@
                                             <i class="fas fa-folder"></i> @category.Key
                                         </h5>
                                         <div>
-                                            <button type="button" 
+                                            <button type="button"
                                                     class="btn btn-sm btn-outline-primary select-category-btn"
                                                     data-category="@category.Key">
                                                 <i class="fas fa-check"></i> Select All in Category
@@ -64,13 +64,13 @@
                                         {
                                             var isChecked = selectedPermissions.Contains(permission);
                                             var description = IdentityProvider.Models.Permissions.GetPermissionDescription(permission);
-                                            
+
                                             <div class="col-md-6 col-lg-4 mb-3">
                                                 <div class="custom-control custom-checkbox">
-                                                    <input type="checkbox" 
-                                                           class="custom-control-input permission-checkbox" 
+                                                    <input type="checkbox"
+                                                           class="custom-control-input permission-checkbox"
                                                            id="permission_@permission.Replace(".", "_")"
-                                                           name="SelectedPermissions" 
+                                                           name="SelectedPermissions"
                                                            value="@permission"
                                                            data-category="@category.Key"
                                                            @(isChecked ? "checked" : "") />
@@ -116,10 +116,18 @@
             // Deselect all permissions
             $('#deselectAllBtn').click(function() {
                 $('.permission-checkbox').prop('checked', false);
-                updateSelectedCount();
+            // Get categories from the model
+            var allCategories = [];
+            $('.permission-category').each(function() {
+                var category = $(this).data('category');
+                if (category && allCategories.indexOf(category) === -1) {
+                    allCategories.push(category);
+                }
             });
 
-            // Select all in category
+                updateSelectedCount();
+
+            allCategories.forEach(category => {
             $('.select-category-btn').click(function() {
                 var category = $(this).data('category');
                 $('[data-category="' + category + '"]').prop('checked', true);
@@ -134,7 +142,7 @@
             function updateSelectedCount() {
                 var selectedCount = $('.permission-checkbox:checked').length;
                 var totalCount = $('.permission-checkbox').length;
-                
+
                 // Update button text to show count
                 $('#selectAllBtn').html('<i class="fas fa-check-square"></i> Select All (' + totalCount + ')');
                 $('#deselectAllBtn').html('<i class="fas fa-square"></i> Deselect All (' + selectedCount + ' selected)');
@@ -151,7 +159,7 @@
                     toastr.warning('Please select at least one permission or continue to remove all permissions.');
                     return false;
                 }
-                
+
                 // Show loading state
                 $(this).find('button[type="submit"]').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Saving...');
             });
