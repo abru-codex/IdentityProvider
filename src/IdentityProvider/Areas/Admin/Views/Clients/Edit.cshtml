@@ -1,17 +1,16 @@
 @model IdentityProvider.Models.ViewModels.EditClientViewModel
 @{
     ViewData["Title"] = "Edit OAuth Client";
+    ViewData["PageTitle"] = $"Edit OAuth Client: {Model.ClientName}";
+    ViewData["PageSubtitle"] = $"Modify configuration for {Model.ClientName} ({Model.ClientId})";
+    ViewData["Breadcrumbs"] = new List<(string Text, string? Url)>
+    {
+        ("Admin", Url.Action("Index", "Dashboard", new { area = "Admin" })),
+        ("OAuth Clients", Url.Action("Index", "Clients", new { area = "Admin" })),
+        ("Edit", null)
+    };
     Layout = "_Layout";
 }
-
-<!-- Breadcrumb Navigation -->
-<nav aria-label="breadcrumb" class="mb-4">
-    <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="/Admin" class="text-decoration-none">Dashboard</a></li>
-        <li class="breadcrumb-item"><a href="/Admin/Clients" class="text-decoration-none">OAuth Clients</a></li>
-        <li class="breadcrumb-item active" aria-current="page">Edit @Model.ClientName</li>
-    </ol>
-</nav>
 
 <div class="row">
     <div class="col-lg-8">

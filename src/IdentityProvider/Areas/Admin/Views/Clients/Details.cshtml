@@ -1,17 +1,25 @@
 @model IdentityProvider.Models.ViewModels.ClientDetailsViewModel
 @{
     ViewData["Title"] = "Client Details";
+    ViewData["PageTitle"] = $"OAuth Client: {Model.ClientName}";
+    ViewData["PageSubtitle"] = "OAuth 2.0 / OpenID Connect Client Details";
+    ViewData["Breadcrumbs"] = new List<(string Text, string? Url)>
+    {
+        ("Admin", Url.Action("Index", "Dashboard", new { area = "Admin" })),
+        ("OAuth Clients", Url.Action("Index", "Clients", new { area = "Admin" })),
+        ("Details", null)
+    };
+    ViewData["PageActions"] = $@"
+        <div class=""d-flex gap-2"">
+            <a href=""/Admin/Clients/Edit/{Model.ClientId}"" class=""btn btn-outline-primary btn-sm"">
+                <i class=""bi bi-pencil""></i> Edit
+            </a>
+            <button type=""button"" class=""btn btn-outline-danger btn-sm"" onclick=""confirmDelete('{Model.ClientId}', '{Model.ClientName}')"">
+                <i class=""bi bi-trash""></i> Delete
+            </button>
+        </div>";
     Layout = "_Layout";
 }
-
-<!-- Breadcrumb Navigation -->
-<nav aria-label="breadcrumb" class="mb-4">
-    <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="/Admin" class="text-decoration-none">Dashboard</a></li>
-        <li class="breadcrumb-item"><a href="/Admin/Clients" class="text-decoration-none">OAuth Clients</a></li>
-        <li class="breadcrumb-item active" aria-current="page">@Model.ClientName</li>
-    </ol>
-</nav>
 
 <div class="row">
     <div class="col-lg-8">

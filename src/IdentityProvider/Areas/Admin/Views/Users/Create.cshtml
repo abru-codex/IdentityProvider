@@ -1,21 +1,16 @@
 @model IdentityProvider.Models.ViewModels.CreateUserViewModel
 @{
     ViewData["Title"] = "Create User";
+    ViewData["PageTitle"] = "Create New User";
+    ViewData["PageSubtitle"] = "Add a new user to the system";
+    ViewData["Breadcrumbs"] = new List<(string Text, string? Url)>
+    {
+        ("Admin", Url.Action("Index", "Dashboard", new { area = "Admin" })),
+        ("Users", Url.Action("Index", "Users", new { area = "Admin" })),
+        ("Create", null)
+    };
     Layout = "_Layout";
 }
-
-<div class="row mb-4">
-    <div class="col">
-        <nav aria-label="breadcrumb">
-            <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="/Admin/Users">Users</a></li>
-                <li class="breadcrumb-item active" aria-current="page">Create User</li>
-            </ol>
-        </nav>
-        <h1 class="h3">Create New User</h1>
-        <p class="text-muted">Add a new user to the system</p>
-    </div>
-</div>
 
 @if (TempData["Error"] != null)
 {

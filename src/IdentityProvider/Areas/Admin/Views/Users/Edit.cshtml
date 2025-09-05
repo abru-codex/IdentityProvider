@@ -1,21 +1,16 @@
 @model IdentityProvider.Models.ViewModels.EditUserViewModel
 @{
     ViewData["Title"] = "Edit User";
+    ViewData["PageTitle"] = "Edit User";
+    ViewData["PageSubtitle"] = "Update user information and settings";
+    ViewData["Breadcrumbs"] = new List<(string Text, string? Url)>
+    {
+        ("Admin", Url.Action("Index", "Dashboard", new { area = "Admin" })),
+        ("Users", Url.Action("Index", "Users", new { area = "Admin" })),
+        ("Edit", null)
+    };
     Layout = "_Layout";
 }
-
-<div class="row mb-4">
-    <div class="col">
-        <nav aria-label="breadcrumb">
-            <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="/Admin/Users">Users</a></li>
-                <li class="breadcrumb-item active" aria-current="page">Edit User</li>
-            </ol>
-        </nav>
-        <h1 class="h3">Edit User</h1>
-        <p class="text-muted">Update user information and settings</p>
-    </div>
-</div>
 
 @if (TempData["Success"] != null)
 {

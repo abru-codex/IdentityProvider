@@ -1,25 +1,25 @@
 @model IdentityProvider.Models.ViewModels.RoleDetailsViewModel
 @{
     ViewData["Title"] = "Role Details";
+    ViewData["PageTitle"] = $"Role Details: {Model.Name}";
+    ViewData["PageSubtitle"] = "View role information and manage user assignments";
+    ViewData["Breadcrumbs"] = new List<(string Text, string? Url)>
+    {
+        ("Admin", Url.Action("Index", "Dashboard", new { area = "Admin" })),
+        ("Roles", Url.Action("Index", "Roles", new { area = "Admin" })),
+        ("Details", null)
+    };
+    ViewData["PageActions"] = $@"
+        <div class=""btn-group"" role=""group"">
+            <a href=""/Admin/Roles/Edit/{Model.Id}"" class=""btn btn-primary"">
+                <i class=""bi bi-pencil""></i> Edit Role
+            </a>
+            <a href=""/Admin/Roles"" class=""btn btn-outline-secondary"">
+                <i class=""bi bi-arrow-left""></i> Back to Roles
+            </a>
+        </div>";
     Layout = "_Layout";
 }
-
-<div class="row mb-4">
-    <div class="col">
-        <h1 class="h3">Role Details: @Model.Name</h1>
-        <p class="text-muted">View role information and manage user assignments</p>
-    </div>
-    <div class="col-auto">
-        <div class="btn-group" role="group">
-            <a href="/Admin/Roles/Edit/@Model.Id" class="btn btn-primary">
-                <i class="bi bi-pencil"></i> Edit Role
-            </a>
-            <a href="/Admin/Roles" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left"></i> Back to Roles
-            </a>
-        </div>
-    </div>
-</div>
 
 @if (TempData["SuccessMessage"] != null)
 {

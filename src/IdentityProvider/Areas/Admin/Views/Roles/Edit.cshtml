@@ -1,10 +1,18 @@
 @model IdentityProvider.Models.ViewModels.EditRoleViewModel
 @{
     ViewData["Title"] = "Edit Role";
+    ViewData["PageTitle"] = $"Edit Role: {Model.Name}";
+    ViewData["PageSubtitle"] = "Modify role information and manage user assignments";
+    ViewData["Breadcrumbs"] = new List<(string Text, string? Url)>
+    {
+        ("Admin", Url.Action("Index", "Dashboard", new { area = "Admin" })),
+        ("Roles", Url.Action("Index", "Roles", new { area = "Admin" })),
+        ("Edit", null)
+    };
     Layout = "_Layout";
 }
 
-<div class="row mb-4">
+<div class="row">
     <div class="col">
         <h1 class="h3">Edit Role: @Model.Name</h1>
         <p class="text-muted">Modify role information and manage user assignments</p>
