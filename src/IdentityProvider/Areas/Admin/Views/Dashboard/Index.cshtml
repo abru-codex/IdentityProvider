@@ -13,12 +13,12 @@
 <!-- Statistics Cards -->
 <div class="row mb-4">
     <div class="col-xl-3 col-md-6 mb-4">
-        <div class="card border-left-primary h-100">
+        <div class="admin-card border-left-primary h-100">
             <div class="card-body">
                 <div class="row align-items-center">
                     <div class="col">
                         <div class="text-uppercase text-primary fw-bold small mb-1">Total Users</div>
-                        <div class="h5 mb-0 fw-bold text-gray-800">@Model.TotalUsers</div>
+                        <div class="h4 mb-0 fw-bold text-dark">@Model.TotalUsers</div>
                     </div>
                     <div class="col-auto">
                         <i class="bi bi-people fs-2 text-primary"></i>
@@ -29,12 +29,12 @@
     </div>
 
     <div class="col-xl-3 col-md-6 mb-4">
-        <div class="card border-left-success h-100">
+        <div class="admin-card border-left-success h-100">
             <div class="card-body">
                 <div class="row align-items-center">
                     <div class="col">
                         <div class="text-uppercase text-success fw-bold small mb-1">Total Roles</div>
-                        <div class="h5 mb-0 fw-bold text-gray-800">@Model.TotalRoles</div>
+                        <div class="h4 mb-0 fw-bold text-dark">@Model.TotalRoles</div>
                     </div>
                     <div class="col-auto">
                         <i class="bi bi-shield-check fs-2 text-success"></i>
@@ -45,12 +45,12 @@
     </div>
 
     <div class="col-xl-3 col-md-6 mb-4">
-        <div class="card border-left-info h-100">
+        <div class="admin-card border-left-info h-100">
             <div class="card-body">
                 <div class="row align-items-center">
                     <div class="col">
                         <div class="text-uppercase text-info fw-bold small mb-1">Active Sessions</div>
-                        <div class="h5 mb-0 fw-bold text-gray-800">@Model.ActiveSessions</div>
+                        <div class="h4 mb-0 fw-bold text-dark">@Model.ActiveSessions</div>
                     </div>
                     <div class="col-auto">
                         <i class="bi bi-activity fs-2 text-info"></i>
@@ -61,12 +61,12 @@
     </div>
 
     <div class="col-xl-3 col-md-6 mb-4">
-        <div class="card border-left-warning h-100">
+        <div class="admin-card border-left-warning h-100">
             <div class="card-body">
                 <div class="row align-items-center">
                     <div class="col">
                         <div class="text-uppercase text-warning fw-bold small mb-1">OAuth Clients</div>
-                        <div class="h5 mb-0 fw-bold text-gray-800">@Model.TotalClients</div>
+                        <div class="h4 mb-0 fw-bold text-dark">@Model.TotalClients</div>
                     </div>
                     <div class="col-auto">
                         <i class="bi bi-diagram-3 fs-2 text-warning"></i>
@@ -117,14 +117,16 @@
 <!-- Recent Users Table -->
 <div class="row">
     <div class="col-12">
-        <div class="card">
+        <div class="admin-card">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <span><i class="bi bi-clock-history me-2"></i>Recent Users</span>
+                <h5 class="mb-0">
+                    <i class="bi bi-clock-history me-2"></i>Recent Users
+                </h5>
                 <a href="/Admin/Users" class="btn btn-sm btn-primary">View All</a>
             </div>
-            <div class="card-body">
+            <div class="card-body p-0">
                 <div class="table-responsive">
-                    <table class="table table-hover">
+                    <table class="table admin-table table-hover mb-0">
                         <thead>
                             <tr>
                                 <th>Username</th>
@@ -137,16 +139,23 @@
                             @foreach (var user in Model.RecentUsers)
                             {
                                 <tr>
-                                    <td>@user.UserName</td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar-sm bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3">
+                                                @user.UserName?.Substring(0, 1).ToUpper()
+                                            </div>
+                                            <span class="fw-semibold">@user.UserName</span>
+                                        </div>
+                                    </td>
                                     <td>@user.Email</td>
                                     <td>
                                         @if (user.EmailConfirmed)
                                         {
-                                            <span class="badge bg-success">Verified</span>
+                                            <span class="badge bg-success status-badge">Verified</span>
                                         }
                                         else
                                         {
-                                            <span class="badge bg-warning">Unverified</span>
+                                            <span class="badge bg-warning status-badge">Unverified</span>
                                         }
                                     </td>
                                     <td>
@@ -167,23 +176,35 @@
 <!-- Quick Actions -->
 <div class="row mt-4">
     <div class="col-12">
-        <div class="card">
+        <div class="admin-card">
             <div class="card-header">
-                <i class="bi bi-lightning me-2"></i>Quick Actions
+                <h5 class="mb-0">
+                    <i class="bi bi-lightning me-2"></i>Quick Actions
+                </h5>
             </div>
             <div class="card-body">
-                <a href="/Admin/Users/Create" class="btn btn-primary me-2 mb-2">
-                    <i class="bi bi-person-plus"></i> Add User
-                </a>
-                <a href="/Admin/Roles/Create" class="btn btn-success me-2 mb-2">
-                    <i class="bi bi-shield-plus"></i> Add Role
-                </a>
-                <a href="/Admin/Clients/Create" class="btn btn-info me-2 mb-2">
-                    <i class="bi bi-plus-circle"></i> Add OAuth Client
-                </a>
-                <a href="/api/auth/.well-known/openid-configuration" target="_blank" class="btn btn-secondary mb-2">
-                    <i class="bi bi-file-code"></i> View OpenID Config
-                </a>
+                <div class="row">
+                    <div class="col-md-3 col-sm-6 mb-3">
+                        <a href="/Admin/Users/Create" class="btn btn-primary w-100">
+                            <i class="bi bi-person-plus me-2"></i>Add User
+                        </a>
+                    </div>
+                    <div class="col-md-3 col-sm-6 mb-3">
+                        <a href="/Admin/Roles/Create" class="btn btn-success w-100">
+                            <i class="bi bi-shield-plus me-2"></i>Add Role
+                        </a>
+                    </div>
+                    <div class="col-md-3 col-sm-6 mb-3">
+                        <a href="/Admin/Clients/Create" class="btn btn-info w-100">
+                            <i class="bi bi-plus-circle me-2"></i>Add OAuth Client
+                        </a>
+                    </div>
+                    <div class="col-md-3 col-sm-6 mb-3">
+                        <a href="/api/auth/.well-known/openid-configuration" target="_blank" class="btn btn-secondary w-100">
+                            <i class="bi bi-file-code me-2"></i>OpenID Config
+                        </a>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -250,19 +271,4 @@
             }
         });
     </script>
-
-    <style>
-        .border-left-primary {
-            border-left: 4px solid #667eea !important;
-        }
-        .border-left-success {
-            border-left: 4px solid #28a745 !important;
-        }
-        .border-left-info {
-            border-left: 4px solid #17a2b8 !important;
-        }
-        .border-left-warning {
-            border-left: 4px solid #ffc107 !important;
-        }
-    </style>
 }

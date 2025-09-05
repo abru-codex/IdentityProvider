@@ -3,13 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Panel - @ViewBag.Title</title>
+    <title>@ViewData["Title"] - Identity Provider Admin</title>
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
-    <!-- Custom CSS -->
+    <!-- DataTables CSS -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css">
+    <!-- Custom Admin CSS -->
     <style>
+        :root {
+            --admin-primary: #0d6efd;
+            --admin-secondary: #6c757d;
+            --admin-success: #198754;
+            --admin-danger: #dc3545;
+            --admin-warning: #ffc107;
+            --admin-info: #0dcaf0;
+            --admin-dark: #212529;
+            --admin-sidebar: #343a40;
+            --admin-sidebar-hover: #495057;
+            --admin-border: #dee2e6;
+        }
+
         body {
             display: flex;
             min-height: 100vh;
@@ -17,140 +32,284 @@
             background-color: #f8f9fa;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }
+
+        /* Sidebar Styles */
         .sidebar {
-            min-width: 250px;
-            max-width: 250px;
-            background-color: #343a40;
+            min-width: 260px;
+            max-width: 260px;
+            background-color: var(--admin-sidebar);
             color: #fff;
-            transition: all 0.3s;
+            transition: all 0.3s ease;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
         }
+
+        .sidebar-brand {
+            padding: 1.5rem 1rem;
+            border-bottom: 1px solid var(--admin-sidebar-hover);
+            font-size: 1.125rem;
+            font-weight: 600;
+            text-align: center;
+            color: #fff;
+        }
+
         .sidebar .nav-link {
             color: #adb5bd;
-            border-radius: 4px;
-            margin: 2px 8px;
-            padding: 10px 16px;
-            transition: all 0.2s;
+            border-radius: 6px;
+            margin: 2px 12px;
+            padding: 12px 16px;
+            transition: all 0.2s ease;
             font-size: 0.9rem;
+            display: flex;
+            align-items: center;
         }
-        .sidebar .nav-link:hover, .sidebar .nav-link.active {
+
+        .sidebar .nav-link:hover, 
+        .sidebar .nav-link.active {
             color: #fff;
-            background-color: #495057;
+            background-color: var(--admin-sidebar-hover);
+            transform: translateX(2px);
         }
+
         .sidebar .nav-link i {
-            width: 18px;
+            width: 20px;
+            margin-right: 10px;
         }
-        .sidebar-brand {
-            padding: 20px;
-            border-bottom: 1px solid #495057;
-            font-size: 1.1rem;
-            font-weight: 600;
-        }
+
+        /* Main Content Styles */
         .content {
             flex: 1;
             display: flex;
             flex-direction: column;
         }
+
         .admin-header {
             background-color: #fff;
-            border-bottom: 1px solid #dee2e6;
-            padding: 0;
+            border-bottom: 1px solid var(--admin-border);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
+
         .admin-navbar {
             padding: 12px 24px;
         }
+
+        /* Page Header Styles */
         .page-header {
             background-color: #fff;
             border-bottom: 1px solid #e9ecef;
-            padding: 20px 24px;
+            padding: 24px;
             margin-bottom: 0;
         }
+
         .breadcrumb {
             background: transparent;
             padding: 0;
             margin: 0 0 8px 0;
             font-size: 0.875rem;
         }
+
         .breadcrumb-item + .breadcrumb-item::before {
             content: "/";
-            color: #6c757d;
+            color: var(--admin-secondary);
         }
+
         .breadcrumb-item a {
-            color: #6c757d;
+            color: var(--admin-secondary);
             text-decoration: none;
         }
+
         .breadcrumb-item a:hover {
-            color: #495057;
+            color: var(--admin-dark);
         }
+
         .page-title {
-            font-size: 1.5rem;
+            font-size: 1.75rem;
             font-weight: 600;
-            color: #212529;
+            color: var(--admin-dark);
             margin: 0;
         }
+
         .page-subtitle {
-            color: #6c757d;
-            margin: 4px 0 0 0;
-            font-size: 0.9rem;
+            color: var(--admin-secondary);
+            margin: 6px 0 0 0;
+            font-size: 1rem;
         }
+
+        /* User Dropdown Styles */
         .user-dropdown .dropdown-toggle::after {
             display: none;
         }
+
         .user-avatar {
-            width: 32px;
-            height: 32px;
-            background-color: #6c757d;
+            width: 36px;
+            height: 36px;
+            background-color: var(--admin-primary);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-weight: 500;
+            font-weight: 600;
             font-size: 0.875rem;
             color: white;
         }
+
+        /* Standard Card Styles */
+        .admin-card {
+            border: none;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+        }
+
+        .admin-card .card-header {
+            background-color: #fff;
+            border-bottom: 1px solid var(--admin-border);
+            padding: 1rem 1.5rem;
+            font-weight: 600;
+        }
+
+        .admin-card .card-body {
+            padding: 1.5rem;
+        }
+
+        /* Standard Table Styles */
+        .admin-table {
+            margin-bottom: 0;
+        }
+
+        .admin-table th {
+            border-top: none;
+            border-bottom: 2px solid var(--admin-border);
+            font-weight: 600;
+            color: var(--admin-dark);
+            padding: 1rem 0.75rem;
+        }
+
+        .admin-table td {
+            padding: 1rem 0.75rem;
+            vertical-align: middle;
+        }
+
+        /* Standard Button Group Styles */
+        .action-buttons .btn {
+            margin-right: 0.25rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .action-buttons .btn-group .btn {
+            margin-right: 0;
+        }
+
+        /* Standard Avatar Styles */
+        .avatar-sm {
+            width: 32px;
+            height: 32px;
+            font-size: 0.75rem;
+        }
+
+        .avatar-md {
+            width: 48px;
+            height: 48px;
+            font-size: 1rem;
+        }
+
+        .avatar-lg {
+            width: 64px;
+            height: 64px;
+            font-size: 1.25rem;
+        }
+
+        /* Standard Badge Styles */
+        .status-badge {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+        }
+
+        /* Border Utility Classes */
+        .border-left-primary { border-left: 4px solid var(--admin-primary) !important; }
+        .border-left-success { border-left: 4px solid var(--admin-success) !important; }
+        .border-left-info { border-left: 4px solid var(--admin-info) !important; }
+        .border-left-warning { border-left: 4px solid var(--admin-warning) !important; }
+        .border-left-danger { border-left: 4px solid var(--admin-danger) !important; }
+
+        /* Responsive Design */
         @@media (max-width: 768px) {
             .sidebar {
                 min-width: 100%;
                 max-width: 100%;
                 position: absolute;
-                z-index: 1000;
+                z-index: 1030;
                 display: none;
             }
+            
             .sidebar.active {
                 display: block;
             }
+            
             .page-header {
                 padding: 16px;
             }
+            
+            .page-title {
+                font-size: 1.5rem;
+            }
+        }
+
+        /* Loading States */
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        /* Custom Form Styles */
+        .form-label {
+            font-weight: 500;
+            color: var(--admin-dark);
+            margin-bottom: 0.5rem;
+        }
+
+        .form-control:focus {
+            border-color: var(--admin-primary);
+            box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+        }
+
+        /* Alert Styles */
+        .alert {
+            border: none;
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+
+        .alert .bi {
+            margin-right: 0.5rem;
         }
     </style>
 </head>
 <body>
     <!-- Sidebar -->
-    <div class="sidebar d-flex flex-column p-3">
-        <h4 class="text-center mb-4">Admin Panel</h4>
-        <nav class="nav flex-column">
+    <div class="sidebar d-flex flex-column">
+        <div class="sidebar-brand">
+            <i class="bi bi-shield-lock me-2"></i>Admin Panel
+        </div>
+        <nav class="nav flex-column flex-grow-1 py-3">
             <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Dashboard" ? "active" : "")" 
                href="@Url.Action("Index", "Dashboard", new { area = "Admin" })">
-                <i class="bi bi-speedometer2 me-2"></i>Dashboard
+                <i class="bi bi-speedometer2"></i>Dashboard
             </a>
             <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Users" ? "active" : "")" 
                href="@Url.Action("Index", "Users", new { area = "Admin" })">
-                <i class="bi bi-people me-2"></i>Users
+                <i class="bi bi-people"></i>Users
             </a>
             <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Roles" ? "active" : "")" 
                href="@Url.Action("Index", "Roles", new { area = "Admin" })">
-                <i class="bi bi-shield-check me-2"></i>Roles
+                <i class="bi bi-shield-check"></i>Roles
             </a>
             <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Clients" ? "active" : "")" 
                href="@Url.Action("Index", "Clients", new { area = "Admin" })">
-                <i class="bi bi-diagram-3 me-2"></i>OAuth Clients
+                <i class="bi bi-diagram-3"></i>OAuth Clients
             </a>
-            <hr class="my-3">
+            <hr class="my-3 mx-3">
             <a class="nav-link" href="@Url.Action("Index", "Home")">
-                <i class="bi bi-house me-2"></i>Back to Site
-            </a>
-            <a class="nav-link" href="@Url.Action("Logout", "Authentication")">
-                <i class="bi bi-box-arrow-right me-2"></i>Logout
+                <i class="bi bi-house"></i>Back to Site
             </a>
         </nav>
     </div>
@@ -168,16 +327,18 @@
                     <div class="ms-auto">
                         <!-- User Menu -->
                         <div class="dropdown user-dropdown">
-                            <button class="btn btn-light dropdown-toggle d-flex align-items-center" type="button" data-bs-toggle="dropdown">
+                            <button class="btn btn-light dropdown-toggle d-flex align-items-center border-0" type="button" data-bs-toggle="dropdown">
                                 <div class="user-avatar me-2">
                                     @(User?.Identity?.Name?.Substring(0, 1)?.ToUpper() ?? "A")
                                 </div>
                                 <span class="d-none d-sm-inline">@(User?.Identity?.Name ?? "Administrator")</span>
                             </button>
-                            <ul class="dropdown-menu dropdown-menu-end">
+                            <ul class="dropdown-menu dropdown-menu-end shadow">
                                 <li><h6 class="dropdown-header">@(User?.Identity?.Name ?? "Administrator")</h6></li>
                                 <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item" href="@Url.Action("Index", "Home")"><i class="bi bi-house me-2"></i>Back to Site</a></li>
+                                <li><a class="dropdown-item" href="@Url.Action("Index", "Home")">
+                                    <i class="bi bi-house me-2"></i>Back to Site
+                                </a></li>
                                 <li>
                                     <form method="post" action="@Url.Action("Logout", "Authentication")" class="d-inline w-100">
                                         @Html.AntiForgeryToken()
@@ -202,36 +363,80 @@
         </div>
     </div>
 
-    <!-- Bootstrap JS and Custom Script -->
+    <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
+    
     <script>
-        
         $(document).ready(function() {
-            // Initialize DataTables
-            $('.datatable').DataTable({
+            // Initialize DataTables with consistent styling
+            $('.admin-table').DataTable({
                 pageLength: 10,
                 responsive: true,
+                dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>' +
+                     '<"row"<"col-sm-12"tr>>' +
+                     '<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
                 language: {
                     search: "Search:",
                     lengthMenu: "Show _MENU_ entries",
-                    info: "Showing _START_ to _END_ of _TOTAL_ entries"
-                }
+                    info: "Showing _START_ to _END_ of _TOTAL_ entries",
+                    emptyTable: "No data available",
+                    zeroRecords: "No matching records found"
+                },
+                columnDefs: [{
+                    targets: -1,
+                    orderable: false
+                }]
             });
             
             // Auto-hide alerts after 5 seconds
             setTimeout(function() {
-                $('.alert').fadeOut();
+                $('.alert').fadeOut('slow');
             }, 5000);
             
+            // Add loading states to buttons
+            $('.btn[type="submit"]').on('click', function() {
+                var btn = $(this);
+                btn.addClass('loading');
+                setTimeout(function() {
+                    btn.removeClass('loading');
+                }, 3000);
+            });
         });
 
         function toggleSidebar() {
             document.querySelector('.sidebar').classList.toggle('active');
         }
+
+        // Utility function for copy to clipboard
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(function() {
+                // Show temporary success message
+                var toast = $('<div class="toast-container position-fixed top-0 end-0 p-3">' +
+                            '<div class="toast show" role="alert">' +
+                            '<div class="toast-body"><i class="bi bi-check-circle me-2"></i>Copied to clipboard!</div>' +
+                            '</div></div>');
+                $('body').append(toast);
+                setTimeout(function() {
+                    toast.remove();
+                }, 2000);
+            });
+        }
+
+        // Confirm delete utility
+        function confirmDelete(id, name, action) {
+            if (confirm(`Are you sure you want to delete "${name}"? This action cannot be undone.`)) {
+                var form = $('<form method="POST" action="' + action + '">' +
+                           '@Html.AntiForgeryToken()' +
+                           '</form>');
+                $('body').append(form);
+                form.submit();
+            }
+        }
     </script>
+    
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

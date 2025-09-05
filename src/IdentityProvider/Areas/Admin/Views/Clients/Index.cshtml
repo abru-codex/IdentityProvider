@@ -1,25 +1,24 @@
 @model List<IdentityProvider.Models.ViewModels.ClientListViewModel>
 @{
     ViewData["Title"] = "OAuth Clients";
+    ViewData["PageTitle"] = "OAuth Client Management";
+    ViewData["PageSubtitle"] = "Manage OAuth 2.0 and OpenID Connect clients";
+    ViewData["Breadcrumbs"] = new List<(string Text, string? Url)>
+    {
+        ("Admin", Url.Action("Index", "Dashboard", new { area = "Admin" })),
+        ("OAuth Clients", null)
+    };
+    ViewData["PageActions"] = $@"
+        <a href=""/Admin/Clients/Create"" class=""btn btn-primary"">
+            <i class=""bi bi-plus-circle""></i> Add New Client
+        </a>";
     Layout = "_Layout";
 }
-
-<div class="row mb-4">
-    <div class="col">
-        <h1 class="h3">OAuth Client Management</h1>
-        <p class="text-muted">Manage OAuth 2.0 and OpenID Connect clients</p>
-    </div>
-    <div class="col-auto">
-        <a href="/Admin/Clients/Create" class="btn btn-primary">
-            <i class="bi bi-plus-circle"></i> Add New Client
-        </a>
-    </div>
-</div>
 
 @if (TempData["Success"] != null)
 {
     <div class="alert alert-success alert-dismissible fade show" role="alert">
-        <i class="bi bi-check-circle"></i> @TempData["Success"]
+        <i class="bi bi-check-circle"></i>@TempData["Success"]
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
 }
@@ -27,23 +26,25 @@
 @if (TempData["Warning"] != null)
 {
     <div class="alert alert-warning alert-dismissible fade show" role="alert">
-        <i class="bi bi-exclamation-triangle"></i> @TempData["Warning"]
+        <i class="bi bi-exclamation-triangle"></i>@TempData["Warning"]
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
 }
 
-<div class="card">
+<div class="admin-card">
     <div class="card-header">
-        <div class="row">
+        <div class="row align-items-center">
             <div class="col">
-                <i class="bi bi-diagram-3"></i> Registered Clients
+                <h5 class="mb-0">
+                    <i class="bi bi-diagram-3 me-2"></i>Registered Clients
+                </h5>
             </div>
             <div class="col-auto">
-                <input type="text" class="form-control form-control-sm" id="clientSearch" placeholder="Search clients...">
+                <input type="text" class="form-control form-control-sm" id="clientSearch" placeholder="Search clients..." style="width: 200px;">
             </div>
         </div>
     </div>
-    <div class="card-body">
+    <div class="card-body p-0">
         @if (!Model.Any())
         {
             <div class="text-center py-5">
@@ -57,14 +58,14 @@
         else
         {
             <div class="table-responsive">
-                <table class="table table-hover" id="clientsTable">
+                <table class="table admin-table table-hover" id="clientsTable">
                     <thead>
                         <tr>
                             <th>Client</th>
                             <th>Redirect URIs</th>
                             <th>Scopes</th>
                             <th>Settings</th>
-                            <th>Actions</th>
+                            <th width="150">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -72,11 +73,16 @@
                         {
                             <tr>
                                 <td>
-                                    <div>
-                                        <div class="fw-bold">@client.ClientName</div>
-                                        <small class="text-muted">
-                                            <i class="bi bi-key"></i> @client.ClientId
-                                        </small>
+                                    <div class="d-flex align-items-center">
+                                        <div class="avatar-sm bg-warning text-white rounded-circle d-flex align-items-center justify-content-center me-3">
+                                            <i class="bi bi-diagram-3"></i>
+                                        </div>
+                                        <div>
+                                            <div class="fw-semibold">@client.ClientName</div>
+                                            <small class="text-muted">
+                                                <i class="bi bi-key"></i> @client.ClientId
+                                            </small>
+                                        </div>
                                     </div>
                                 </td>
                                 <td>
@@ -101,14 +107,16 @@
                                 <td>
                                     @if (client.AllowedScopes.Any())
                                     {
-                                        @foreach (var scope in client.AllowedScopes.Take(3))
-                                        {
-                                            <span class="badge bg-info me-1">@scope</span>
-                                        }
-                                        @if (client.AllowedScopes.Count > 3)
-                                        {
-                                            <span class="badge bg-secondary">+@(client.AllowedScopes.Count - 3)</span>
-                                        }
+                                        <div class="d-flex flex-wrap gap-1">
+                                            @foreach (var scope in client.AllowedScopes.Take(3))
+                                            {
+                                                <span class="badge bg-info status-badge">@scope</span>
+                                            }
+                                            @if (client.AllowedScopes.Count > 3)
+                                            {
+                                                <span class="badge bg-secondary status-badge">+@(client.AllowedScopes.Count - 3)</span>
+                                            }
+                                        </div>
                                     }
                                     else
                                     {
@@ -116,33 +124,34 @@
                                     }
                                 </td>
                                 <td>
-                                    <div class="d-flex gap-2">
+                                    <div class="d-flex flex-wrap gap-1">
                                         @if (client.RequirePkce)
                                         {
-                                            <span class="badge bg-success" title="PKCE Required">
+                                            <span class="badge bg-success status-badge" title="PKCE Required">
                                                 <i class="bi bi-shield-check"></i> PKCE
                                             </span>
                                         }
                                         @if (client.AllowOfflineAccess)
                                         {
-                                            <span class="badge bg-primary" title="Refresh Tokens Enabled">
+                                            <span class="badge bg-primary status-badge" title="Refresh Tokens Enabled">
                                                 <i class="bi bi-arrow-clockwise"></i> Refresh
                                             </span>
                                         }
-                                        <span class="badge bg-secondary" title="Access Token Lifetime">
+                                        <span class="badge bg-secondary status-badge" title="Access Token Lifetime">
                                             <i class="bi bi-clock"></i> @client.AccessTokenLifetimeMinutes min
                                         </span>
                                     </div>
                                 </td>
                                 <td>
-                                    <div class="btn-group btn-group-sm" role="group">
+                                    <div class="btn-group btn-group-sm action-buttons" role="group">
                                         <a href="/Admin/Clients/Details/@client.ClientId" class="btn btn-outline-primary" title="View Details">
                                             <i class="bi bi-eye"></i>
                                         </a>
                                         <a href="/Admin/Clients/Edit/@client.ClientId" class="btn btn-outline-secondary" title="Edit">
                                             <i class="bi bi-pencil"></i>
                                         </a>
-                                        <button type="button" class="btn btn-outline-danger" onclick="confirmDelete('@client.ClientId', '@client.ClientName')" title="Delete">
+                                        <button type="button" class="btn btn-outline-danger" title="Delete" 
+                                                onclick="confirmDelete('@client.ClientId', '@client.ClientName', '/Admin/Clients/Delete/@client.ClientId')">
                                             <i class="bi bi-trash"></i>
                                         </button>
                                     </div>
@@ -165,15 +174,12 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <p>Are you sure you want to delete the client <strong id="deleteClientName"></strong>?</p>
-                <div class="alert alert-warning">
-                    <i class="bi bi-exclamation-triangle"></i> This action cannot be undone. Any applications using this client will no longer be able to authenticate.
-                </div>
+                Are you sure you want to delete client <strong id="deleteClientName"></strong>?
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                 <form id="deleteForm" method="post" style="display: inline;">
-                    <button type="submit" class="btn btn-danger">Delete Client</button>
+                    <button type="submit" class="btn btn-danger">Delete</button>
                 </form>
             </div>
         </div>
@@ -182,14 +188,30 @@
 
 @section Scripts {
     <script>
-        // Search functionality
-        document.getElementById('clientSearch').addEventListener('keyup', function() {
-            var searchText = this.value.toLowerCase();
-            var rows = document.querySelectorAll('#clientsTable tbody tr');
-            
-            rows.forEach(function(row) {
-                var text = row.textContent.toLowerCase();
-                row.style.display = text.includes(searchText) ? '' : 'none';
+        $(document).ready(function() {
+            // Enhanced search functionality
+            $('#clientSearch').on('keyup', function() {
+                var searchText = this.value.toLowerCase();
+                var rows = $('#clientsTable tbody tr');
+                
+                rows.each(function() {
+                    var rowText = $(this).text().toLowerCase();
+                    $(this).toggle(rowText.includes(searchText));
+                });
+                
+                // Update "no results" message
+                var visibleRows = rows.filter(':visible').length;
+                if (visibleRows === 0 && searchText.length > 0) {
+                    if ($('#noResultsRow').length === 0) {
+                        $('#clientsTable tbody').append(
+                            '<tr id="noResultsRow"><td colspan="5" class="text-center text-muted py-4">' +
+                            '<i class="bi bi-search me-2"></i>No clients found matching your search.' +
+                            '</td></tr>'
+                        );
+                    }
+                } else {
+                    $('#noResultsRow').remove();
+                }
             });
         });
 

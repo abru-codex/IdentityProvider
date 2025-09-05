@@ -18,7 +18,7 @@
 @if (TempData["Success"] != null)
 {
     <div class="alert alert-success alert-dismissible fade show" role="alert">
-        @TempData["Success"]
+        <i class="bi bi-check-circle"></i>@TempData["Success"]
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
 }
@@ -26,33 +26,35 @@
 @if (TempData["Error"] != null)
 {
     <div class="alert alert-danger alert-dismissible fade show" role="alert">
-        @TempData["Error"]
+        <i class="bi bi-exclamation-circle"></i>@TempData["Error"]
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
 }
 
-<div class="card">
+<div class="admin-card">
     <div class="card-header">
-        <div class="row">
+        <div class="row align-items-center">
             <div class="col">
-                <i class="bi bi-people"></i> User List
+                <h5 class="mb-0">
+                    <i class="bi bi-people me-2"></i>User List
+                </h5>
             </div>
             <div class="col-auto">
-                <input type="text" class="form-control form-control-sm" id="userSearch" placeholder="Search users...">
+                <input type="text" class="form-control form-control-sm" id="userSearch" placeholder="Search users..." style="width: 200px;">
             </div>
         </div>
     </div>
-    <div class="card-body">
+    <div class="card-body p-0">
         <div class="table-responsive">
-            <table class="table table-hover" id="usersTable">
+            <table class="table admin-table table-hover" id="usersTable">
                 <thead>
                     <tr>
-                        <th>Username</th>
+                        <th>User</th>
                         <th>Email</th>
                         <th>Phone</th>
                         <th>Status</th>
                         <th>Roles</th>
-                        <th>Actions</th>
+                        <th width="150">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -61,48 +63,56 @@
                         <tr>
                             <td>
                                 <div class="d-flex align-items-center">
-                                    <div class="avatar-sm bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2">
+                                    <div class="avatar-sm bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3">
                                         @user.UserName?.Substring(0, 1).ToUpper()
                                     </div>
                                     <div>
-                                        <div class="fw-bold">@user.UserName</div>
+                                        <div class="fw-semibold">@user.UserName</div>
                                         <small class="text-muted">ID: @user.Id.Substring(0, 8)...</small>
                                     </div>
                                 </div>
                             </td>
                             <td>
-                                @user.Email
-                                @if (user.EmailConfirmed)
-                                {
-                                    <i class="bi bi-check-circle-fill text-success" title="Email Verified"></i>
-                                }
-                                else
-                                {
-                                    <i class="bi bi-exclamation-circle text-warning" title="Email Not Verified"></i>
-                                }
+                                <div>
+                                    @user.Email
+                                    @if (user.EmailConfirmed)
+                                    {
+                                        <i class="bi bi-check-circle-fill text-success ms-1" title="Email Verified"></i>
+                                    }
+                                    else
+                                    {
+                                        <i class="bi bi-exclamation-circle text-warning ms-1" title="Email Not Verified"></i>
+                                    }
+                                </div>
                             </td>
                             <td>@(user.PhoneNumber ?? "—")</td>
                             <td>
                                 @if (user.LockoutEnd != null && user.LockoutEnd > DateTimeOffset.UtcNow)
                                 {
-                                    <span class="badge bg-danger">Locked</span>
+                                    <span class="badge bg-danger status-badge">Locked</span>
                                 }
                                 else if (user.EmailConfirmed)
                                 {
-                                    <span class="badge bg-success">Active</span>
+                                    <span class="badge bg-success status-badge">Active</span>
                                 }
                                 else
                                 {
-                                    <span class="badge bg-warning">Unverified</span>
+                                    <span class="badge bg-warning status-badge">Unverified</span>
                                 }
                             </td>
                             <td>
                                 @if (user.Roles.Any())
                                 {
-                                    @foreach (var role in user.Roles)
-                                    {
-                                        <span class="badge bg-info me-1">@role</span>
-                                    }
+                                    <div class="d-flex flex-wrap gap-1">
+                                        @foreach (var role in user.Roles.Take(2))
+                                        {
+                                            <span class="badge bg-info status-badge">@role</span>
+                                        }
+                                        @if (user.Roles.Count > 2)
+                                        {
+                                            <span class="badge bg-secondary status-badge">+@(user.Roles.Count - 2)</span>
+                                        }
+                                    </div>
                                 }
                                 else
                                 {
@@ -110,14 +120,15 @@
                                 }
                             </td>
                             <td>
-                                <div class="btn-group btn-group-sm" role="group">
+                                <div class="btn-group btn-group-sm action-buttons" role="group">
                                     <a href="/Admin/Users/Details/@user.Id" class="btn btn-outline-primary" title="View Details">
                                         <i class="bi bi-eye"></i>
                                     </a>
                                     <a href="/Admin/Users/Edit/@user.Id" class="btn btn-outline-secondary" title="Edit">
                                         <i class="bi bi-pencil"></i>
                                     </a>
-                                    <button type="button" class="btn btn-outline-danger" onclick="confirmDelete('@user.Id', '@user.UserName')" title="Delete">
+                                    <button type="button" class="btn btn-outline-danger" title="Delete" 
+                                            onclick="confirmDelete('@user.Id', '@user.UserName', '/Admin/Users/Delete/@user.Id')">
                                         <i class="bi bi-trash"></i>
                                     </button>
                                 </div>
@@ -153,14 +164,30 @@
 
 @section Scripts {
     <script>
-        // Search functionality
-        document.getElementById('userSearch').addEventListener('keyup', function() {
-            var searchText = this.value.toLowerCase();
-            var rows = document.querySelectorAll('#usersTable tbody tr');
-            
-            rows.forEach(function(row) {
-                var text = row.textContent.toLowerCase();
-                row.style.display = text.includes(searchText) ? '' : 'none';
+        $(document).ready(function() {
+            // Enhanced search functionality
+            $('#userSearch').on('keyup', function() {
+                var searchText = this.value.toLowerCase();
+                var rows = $('#usersTable tbody tr');
+                
+                rows.each(function() {
+                    var rowText = $(this).text().toLowerCase();
+                    $(this).toggle(rowText.includes(searchText));
+                });
+                
+                // Update "no results" message
+                var visibleRows = rows.filter(':visible').length;
+                if (visibleRows === 0 && searchText.length > 0) {
+                    if ($('#noResultsRow').length === 0) {
+                        $('#usersTable tbody').append(
+                            '<tr id="noResultsRow"><td colspan="6" class="text-center text-muted py-4">' +
+                            '<i class="bi bi-search me-2"></i>No users found matching your search.' +
+                            '</td></tr>'
+                        );
+                    }
+                } else {
+                    $('#noResultsRow').remove();
+                }
             });
         });
 

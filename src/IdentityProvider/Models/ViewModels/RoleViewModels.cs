@@ -9,6 +9,7 @@ namespace IdentityProvider.Models.ViewModels
         public string? NormalizedName { get; set; }
         public int UserCount { get; set; }
         public List<string> AssignedUsers { get; set; } = new();
+        public string? Description { get; set; }
     }
 
     public class RoleDetailsViewModel
