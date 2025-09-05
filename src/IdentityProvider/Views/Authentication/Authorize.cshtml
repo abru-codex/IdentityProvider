@@ -1,0 +1,65 @@
+@model IdentityProvider.Models.OAuth2Request
+@{
+    ViewData["Title"] = "Authorize Application";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header text-center">
+                <h4><i class="bi bi-shield-check"></i> Authorize Application</h4>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i>
+                    <strong>@Model.ClientId</strong> is requesting access to your account.
+                </div>
+                
+                <div class="mb-3">
+                    <h6>Requested Permissions:</h6>
+                    <ul class="list-group list-group-flush">
+                        @if (!string.IsNullOrEmpty(Model.Scope))
+                        {
+                            @foreach (var scope in Model.Scope.Split(' '))
+                            {
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    @scope
+                                    <span class="badge bg-primary rounded-pill">Required</span>
+                                </li>
+                            }
+                        }
+                        else
+                        {
+                            <li class="list-group-item">Basic profile information</li>
+                        }
+                    </ul>
+                </div>
+                
+                <form method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" asp-for="ClientId" />
+                    <input type="hidden" asp-for="RedirectUri" />
+                    <input type="hidden" asp-for="ResponseType" />
+                    <input type="hidden" asp-for="State" />
+                    <input type="hidden" asp-for="Scope" />
+                    <input type="hidden" asp-for="CodeChallenge" />
+                    <input type="hidden" asp-for="CodeChallengeMethod" />
+                    <input type="hidden" asp-for="Nonce" />
+                    <input type="hidden" asp-for="Prompt" />
+                    
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-success btn-lg">
+                            <i class="bi bi-check-circle"></i> Authorize
+                        </button>
+                        <a href="@Model.RedirectUri" class="btn btn-outline-danger">
+                            <i class="bi bi-x-circle"></i> Deny
+                        </a>
+                    </div>
+                </form>
+            </div>
+            <div class="card-footer text-muted text-center">
+                <small>You are currently signed in as <strong>@User.Identity?.Name</strong></small>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,301 @@
+@model IdentityProvider.Models.ViewModels.RoleDetailsViewModel
+@{
+    ViewData["Title"] = "Role Details";
+    Layout = "_Layout";
+}
+
+<div class="row mb-4">
+    <div class="col">
+        <h1 class="h3">Role Details: @Model.Name</h1>
+        <p class="text-muted">View role information and manage user assignments</p>
+    </div>
+    <div class="col-auto">
+        <div class="btn-group" role="group">
+            <a href="/Admin/Roles/Edit/@Model.Id" class="btn btn-primary">
+                <i class="bi bi-pencil"></i> Edit Role
+            </a>
+            <a href="/Admin/Roles" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Back to Roles
+            </a>
+        </div>
+    </div>
+</div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @TempData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<div class="row">
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-shield-check"></i> Role Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <dl class="row">
+                    <dt class="col-sm-4">Name:</dt>
+                    <dd class="col-sm-8">
+                        <span class="badge bg-primary fs-6">@Model.Name</span>
+                    </dd>
+
+                    <dt class="col-sm-4">ID:</dt>
+                    <dd class="col-sm-8">
+                        <code class="text-muted">@Model.Id</code>
+                    </dd>
+
+                    <dt class="col-sm-4">Normalized:</dt>
+                    <dd class="col-sm-8">
+                        <code class="text-muted">@Model.NormalizedName</code>
+                    </dd>
+
+                    <dt class="col-sm-4">User Count:</dt>
+                    <dd class="col-sm-8">
+                        <span class="badge bg-secondary">@Model.UserCount user@(Model.UserCount != 1 ? "s" : "")</span>
+                    </dd>
+                </dl>
+
+                <hr>
+
+                <div class="d-grid gap-2">
+                    <a href="/Admin/Roles/Edit/@Model.Id" class="btn btn-outline-primary">
+                        <i class="bi bi-pencil"></i> Edit Role
+                    </a>
+                    @if (Model.UserCount == 0)
+                    {
+                        <button type="button" class="btn btn-outline-danger" onclick="confirmDelete('@Model.Id', '@Model.Name')">
+                            <i class="bi bi-trash"></i> Delete Role
+                        </button>
+                    }
+                    else
+                    {
+                        <button type="button" class="btn btn-outline-danger" disabled title="Cannot delete role with assigned users">
+                            <i class="bi bi-trash"></i> Delete Role
+                        </button>
+                        <small class="text-muted">Remove all users before deleting this role.</small>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <div class="row">
+                    <div class="col">
+                        <h5 class="card-title mb-0">
+                            <i class="bi bi-people"></i> Assigned Users (@Model.UserCount)
+                        </h5>
+                    </div>
+                    <div class="col-auto">
+                        @if (Model.AssignedUsers.Any())
+                        {
+                            <input type="text" class="form-control form-control-sm" id="userSearch" placeholder="Search users...">
+                        }
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                @if (Model.AssignedUsers.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="usersTable">
+                            <thead>
+                                <tr>
+                                    <th>User</th>
+                                    <th>Email</th>
+                                    <th>Other Roles</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var user in Model.AssignedUsers)
+                                {
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="user-avatar bg-info text-white rounded-circle d-flex align-items-center justify-content-center me-2">
+                                                    @user.UserName.Substring(0, 1).ToUpper()
+                                                </div>
+                                                <div>
+                                                    <div class="fw-bold">@user.UserName</div>
+                                                    <small class="text-muted">ID: @user.UserId.Substring(0, 8)...</small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            @user.Email
+                                        </td>
+                                        <td>
+                                            @if (user.OtherRoles.Any())
+                                            {
+                                                @foreach (var role in user.OtherRoles)
+                                                {
+                                                    <span class="badge bg-secondary me-1">@role</span>
+                                                }
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">None</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm" role="group">
+                                                <a href="/Admin/Users/Details/@user.UserId" class="btn btn-outline-primary" title="View User Details">
+                                                    <i class="bi bi-eye"></i>
+                                                </a>
+                                                <button type="button" class="btn btn-outline-danger" onclick="confirmRemoveUser('@user.UserId', '@user.UserName')" title="Remove from Role">
+                                                    <i class="bi bi-person-dash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center py-5">
+                        <i class="bi bi-people text-muted" style="font-size: 3rem;"></i>
+                        <h4 class="text-muted mt-3">No Users Assigned</h4>
+                        <p class="text-muted">This role doesn't have any users assigned to it yet.</p>
+                        <a href="/Admin/Roles/Edit/@Model.Id" class="btn btn-primary">
+                            <i class="bi bi-person-plus"></i> Assign Users
+                        </a>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Role Confirmation Modal -->
+<div class="modal fade" id="deleteRoleModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Delete Role</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                Are you sure you want to delete role <strong id="deleteRoleName"></strong>?
+                <div class="alert alert-warning mt-3">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    This action cannot be undone.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="deleteRoleForm" method="post" style="display: inline;">
+                    <button type="submit" class="btn btn-danger">Delete Role</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Remove User Confirmation Modal -->
+<div class="modal fade" id="removeUserModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Remove User from Role</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                Are you sure you want to remove user <strong id="removeUserName"></strong> from the role <strong>@Model.Name</strong>?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmRemoveUserBtn">Remove User</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Search functionality
+        const userSearch = document.getElementById('userSearch');
+        if (userSearch) {
+            userSearch.addEventListener('keyup', function() {
+                var searchText = this.value.toLowerCase();
+                var rows = document.querySelectorAll('#usersTable tbody tr');
+                
+                rows.forEach(function(row) {
+                    var text = row.textContent.toLowerCase();
+                    row.style.display = text.includes(searchText) ? '' : 'none';
+                });
+            });
+        }
+
+        // Delete role confirmation
+        function confirmDelete(roleId, roleName) {
+            document.getElementById('deleteRoleName').textContent = roleName;
+            document.getElementById('deleteRoleForm').action = '/Admin/Roles/Delete/' + roleId;
+            new bootstrap.Modal(document.getElementById('deleteRoleModal')).show();
+        }
+
+        // Remove user confirmation
+        let currentUserId = '';
+        function confirmRemoveUser(userId, userName) {
+            currentUserId = userId;
+            document.getElementById('removeUserName').textContent = userName;
+            new bootstrap.Modal(document.getElementById('removeUserModal')).show();
+        }
+
+        // Handle remove user confirmation
+        document.getElementById('confirmRemoveUserBtn').addEventListener('click', function() {
+            if (currentUserId) {
+                // Make AJAX call to remove user from role
+                fetch('/Admin/Roles/RemoveUser/@Model.Id', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: 'userId=' + encodeURIComponent(currentUserId)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Reload the page to show updated user list
+                        location.reload();
+                    } else {
+                        alert('Error: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred while removing the user.');
+                });
+                
+                // Close modal
+                bootstrap.Modal.getInstance(document.getElementById('removeUserModal')).hide();
+            }
+        });
+    </script>
+
+    <style>
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            font-size: 14px;
+        }
+    </style>
+}

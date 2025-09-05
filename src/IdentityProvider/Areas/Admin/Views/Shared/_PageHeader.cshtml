@@ -1,0 +1,49 @@
+@{
+    var pageTitle = ViewData["PageTitle"]?.ToString() ?? ViewData["Title"]?.ToString() ?? "Admin Panel";
+    var pageSubtitle = ViewData["PageSubtitle"]?.ToString();
+    var breadcrumbs = ViewData["Breadcrumbs"] as List<(string Text, string? Url)>;
+    var pageActions = ViewData["PageActions"] as string;
+}
+
+<div class="page-header">
+    <div class="container-fluid">
+        <div class="row align-items-center">
+            <div class="col">
+                @if (breadcrumbs != null && breadcrumbs.Any())
+                {
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            @foreach (var (text, url) in breadcrumbs)
+                            {
+                                @if (url != null)
+                                {
+                                    <li class="breadcrumb-item">
+                                        <a href="@url">@text</a>
+                                    </li>
+                                }
+                                else
+                                {
+                                    <li class="breadcrumb-item active" aria-current="page">@text</li>
+                                }
+                            }
+                        </ol>
+                    </nav>
+                }
+                
+                <h1 class="page-title">@pageTitle</h1>
+                
+                @if (!string.IsNullOrEmpty(pageSubtitle))
+                {
+                    <p class="page-subtitle">@pageSubtitle</p>
+                }
+            </div>
+            
+            @if (!string.IsNullOrEmpty(pageActions))
+            {
+                <div class="col-auto">
+                    @Html.Raw(pageActions)
+                </div>
+            }
+        </div>
+    </div>
+</div>

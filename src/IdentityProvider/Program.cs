@@ -1,7 +1,6 @@
 using System.Security.Claims;
 using System.Text;
 using IdentityProvider.DbContext;
-using IdentityProvider.Endpoints;
 using IdentityProvider.Options;
 using IdentityProvider.Services;
 using IdentityProvider.Validation;
@@ -43,6 +42,9 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.Cookie.HttpOnly = true;
     options.ExpireTimeSpan = TimeSpan.FromMinutes(60);
     options.SlidingExpiration = true;
+    options.LoginPath = "/Authentication/Login";
+    options.LogoutPath = "/Authentication/Logout";
+    options.AccessDeniedPath = "/Home/AccessDenied";
 });
 
 // Configure FluentValidation
@@ -55,10 +57,11 @@ builder.Services.Configure<OpenIdConnectOptions>(builder.Configuration.GetSectio
 
 // Register services
 builder.Services.AddSingleton<JwksService>();
-builder.Services.AddScoped<TokenService>(); // Changed from Singleton to Scoped
+builder.Services.AddScoped<TokenService>();
 builder.Services.AddScoped<DbSeeder>();
 builder.Services.AddScoped<AuthorizationService>();
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddHttpClient();
 
 // Configure Authentication
 builder.Services.AddAuthentication()
@@ -148,12 +151,7 @@ builder.Services.AddCors(options =>
     });
 });
 
-builder.Services.AddRazorPages();
 builder.Services.AddControllersWithViews();
-
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
-builder.Services.AddEndpointsApiExplorer();
 
 var app = builder.Build();
 
@@ -161,7 +159,6 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.UseDeveloperExceptionPage();
-    app.MapOpenApi();
 }
 
 app.UseHttpsRedirection();
@@ -173,36 +170,16 @@ app.UseCors("DefaultCorsPolicy");
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Map Razor Pages
-app.MapRazorPages();
-
 // Map MVC Controllers
 app.MapControllerRoute(
-    name: "admin",
-    pattern: "Admin/{controller=Dashboard}/{action=Index}/{id?}");
+    name: "Admin",
+    pattern: "{area:exists}/{controller=Home}/{action=Index}/{id?}");
 
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
-// Map endpoints
-app.MapAuthenticationEndpoint();
-app.MapUserManagementEndpoint();
-app.MapRoleManagementEndpoint();
-
-app.MapGet("/", (ClaimsPrincipal user) =>
-{
-    return Results.Ok(new
-    {
-        Message = "Welcome to the Identity Provider API!",
-        User = user.Identity?.Name,
-        Roles = user.Claims.Select(c => new { c.Type, c.Value })
-    });
-});
-
 // Seed the database
 await app.SeedDatabaseAsync();
 
 app.Run();
-
-

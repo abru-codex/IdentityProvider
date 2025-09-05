@@ -1,0 +1,247 @@
+@model IdentityProvider.Models.ViewModels.EditRoleViewModel
+@{
+    ViewData["Title"] = "Edit Role";
+    Layout = "_Layout";
+}
+
+<div class="row mb-4">
+    <div class="col">
+        <h1 class="h3">Edit Role: @Model.Name</h1>
+        <p class="text-muted">Modify role information and manage user assignments</p>
+    </div>
+    <div class="col-auto">
+        <a href="/Admin/Roles" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Roles
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-shield-check"></i> Role Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <form asp-action="Edit" method="post">
+                    <input asp-for="Id" type="hidden" />
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+                    
+                    <div class="mb-3">
+                        <label asp-for="Name" class="form-label">Role Name <span class="text-danger">*</span></label>
+                        <input asp-for="Name" class="form-control" />
+                        <div class="form-text">
+                            Role names should be descriptive and follow your organization's naming conventions.
+                        </div>
+                        <span asp-validation-for="Name" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="NormalizedName" class="form-label">Normalized Name</label>
+                        <input asp-for="NormalizedName" class="form-control" readonly />
+                        <div class="form-text">
+                            This is automatically generated and used for internal comparisons.
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-lg"></i> Save Changes
+                        </button>
+                        <a href="/Admin/Roles" class="btn btn-secondary">
+                            <i class="bi bi-x-lg"></i> Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-people"></i> User Assignments
+                </h5>
+            </div>
+            <div class="card-body">
+                <form id="userAssignmentForm" asp-action="ManageUsers" asp-route-roleId="@Model.Id" method="post">
+                    <div class="mb-3">
+                        <h6>Assigned Users (@Model.AssignedUsers.Count)</h6>
+                        @if (Model.AssignedUsers.Any())
+                        {
+                            <div class="assigned-users-list mb-3">
+                                @foreach (var user in Model.AssignedUsers)
+                                {
+                                    <div class="user-item border rounded p-2 mb-2">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="selectedUserIds" value="@user.UserId" checked />
+                                            <label class="form-check-label">
+                                                <div class="d-flex align-items-center">
+                                                    <div class="user-avatar bg-info text-white rounded-circle d-flex align-items-center justify-content-center me-2">
+                                                        @user.UserName.Substring(0, 1).ToUpper()
+                                                    </div>
+                                                    <div>
+                                                        <div class="fw-bold">@user.UserName</div>
+                                                        <small class="text-muted">@user.Email</small>
+                                                        @if (user.OtherRoles.Any())
+                                                        {
+                                                            <div>
+                                                                @foreach (var role in user.OtherRoles)
+                                                                {
+                                                                    <span class="badge bg-secondary me-1">@role</span>
+                                                                }
+                                                            </div>
+                                                        }
+                                                    </div>
+                                                </div>
+                                            </label>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <p class="text-muted">No users currently assigned to this role.</p>
+                        }
+                    </div>
+
+                    @if (Model.AvailableUsers.Any())
+                    {
+                        <div class="mb-3">
+                            <h6>Available Users (@Model.AvailableUsers.Count)</h6>
+                            <div class="available-users-list">
+                                @foreach (var user in Model.AvailableUsers)
+                                {
+                                    <div class="user-item border rounded p-2 mb-2">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="selectedUserIds" value="@user.UserId" />
+                                            <label class="form-check-label">
+                                                <div class="d-flex align-items-center">
+                                                    <div class="user-avatar bg-secondary text-white rounded-circle d-flex align-items-center justify-content-center me-2">
+                                                        @user.UserName.Substring(0, 1).ToUpper()
+                                                    </div>
+                                                    <div>
+                                                        <div class="fw-bold">@user.UserName</div>
+                                                        <small class="text-muted">@user.Email</small>
+                                                        @if (user.OtherRoles.Any())
+                                                        {
+                                                            <div>
+                                                                @foreach (var role in user.OtherRoles)
+                                                                {
+                                                                    <span class="badge bg-light text-dark me-1">@role</span>
+                                                                }
+                                                            </div>
+                                                        }
+                                                    </div>
+                                                </div>
+                                            </label>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+
+                    <div class="d-flex gap-2 mt-3">
+                        <button type="submit" class="btn btn-success btn-sm">
+                            <i class="bi bi-check-lg"></i> Update Assignments
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="selectAllUsers()">
+                            <i class="bi bi-check-all"></i> Select All
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="clearAllUsers()">
+                            <i class="bi bi-x-square"></i> Clear All
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    
+    <script>
+        // Auto-format role name on input
+        document.getElementById('Name').addEventListener('input', function() {
+            var value = this.value;
+            // Remove any leading/trailing spaces and normalize spacing
+            value = value.trim().replace(/\s+/g, ' ');
+            if (value !== this.value) {
+                this.value = value;
+            }
+        });
+
+        // User selection functions
+        function selectAllUsers() {
+            document.querySelectorAll('input[name="selectedUserIds"]').forEach(function(checkbox) {
+                checkbox.checked = true;
+            });
+        }
+
+        function clearAllUsers() {
+            document.querySelectorAll('input[name="selectedUserIds"]').forEach(function(checkbox) {
+                checkbox.checked = false;
+            });
+        }
+
+        // Search functionality for users
+        function createUserSearch() {
+            const searchInput = document.createElement('input');
+            searchInput.type = 'text';
+            searchInput.className = 'form-control form-control-sm mb-3';
+            searchInput.placeholder = 'Search users...';
+            searchInput.id = 'userSearch';
+            
+            const userAssignmentForm = document.getElementById('userAssignmentForm');
+            userAssignmentForm.insertBefore(searchInput, userAssignmentForm.firstChild);
+            
+            searchInput.addEventListener('keyup', function() {
+                const searchText = this.value.toLowerCase();
+                const userItems = document.querySelectorAll('.user-item');
+                
+                userItems.forEach(function(item) {
+                    const text = item.textContent.toLowerCase();
+                    item.style.display = text.includes(searchText) ? '' : 'none';
+                });
+            });
+        }
+
+        // Initialize search when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            createUserSearch();
+        });
+    </script>
+
+    <style>
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            font-size: 14px;
+        }
+        
+        .user-item {
+            background-color: #f8f9fa;
+            transition: background-color 0.2s;
+        }
+        
+        .user-item:hover {
+            background-color: #e9ecef;
+        }
+        
+        .assigned-users-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .available-users-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+    </style>
+}

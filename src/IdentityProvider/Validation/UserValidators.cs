@@ -1,5 +1,5 @@
 using FluentValidation;
-using IdentityProvider.Endpoints;
+using IdentityProvider.Models;
 
 namespace IdentityProvider.Validation;
 

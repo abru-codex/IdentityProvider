@@ -120,4 +120,30 @@ namespace IdentityProvider.Models.ViewModels
         [Compare("NewPassword", ErrorMessage = "The new password and confirmation password do not match.")]
         public string ConfirmPassword { get; set; } = default!;
     }
+
+    public class UserListPageViewModel
+    {
+        public List<UserListViewModel> Users { get; set; } = new();
+        public int CurrentPage { get; set; }
+        public int PageSize { get; set; }
+        public int TotalCount { get; set; }
+        public string? Search { get; set; }
+        public int TotalPages => (int)Math.Ceiling((double)TotalCount / PageSize);
+    }
+
+    public class LoginViewModel
+    {
+        [Required]
+        [EmailAddress]
+        [Display(Name = "Email")]
+        public string Username { get; set; } = default!;
+
+        [Required]
+        [DataType(DataType.Password)]
+        [Display(Name = "Password")]
+        public string Password { get; set; } = default!;
+
+        [Display(Name = "Remember me")]
+        public bool RememberMe { get; set; }
+    }
 }

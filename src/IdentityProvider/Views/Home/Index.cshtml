@@ -1,0 +1,120 @@
+@model dynamic
+@{
+    ViewData["Title"] = "Home";
+    Layout = "_Layout";
+}
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="jumbotron bg-primary text-white p-5 rounded mb-4">
+            <h1 class="display-4">Welcome to Identity Provider</h1>
+            <p class="lead">A secure and modern identity management solution built with ASP.NET Core MVC.</p>
+            @if (User.Identity?.IsAuthenticated == true)
+            {
+                <p>Hello, <strong>@Model.UserName</strong>!</p>
+                @if (Model.IsAdmin)
+                {
+                    <a class="btn btn-light btn-lg" href="@Url.Action("Index", "Dashboard", new { area = "Admin" })" role="button">
+                        <i class="bi bi-speedometer2"></i> Admin Dashboard
+                    </a>
+                }
+            }
+            else
+            {
+                <a class="btn btn-light btn-lg" href="@Url.Action("Login", "Authentication")" role="button">
+                    <i class="bi bi-box-arrow-in-right"></i> Sign In
+                </a>
+            }
+        </div>
+    </div>
+</div>
+
+@if (User.Identity?.IsAuthenticated == true)
+{
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-person-circle"></i> User Information
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Username:</strong> @Model.UserName</p>
+                    <p><strong>Roles:</strong></p>
+                    <ul>
+                        @foreach (var role in Model.Roles)
+                        {
+                            <li><span class="badge bg-primary">@role</span></li>
+                        }
+                    </ul>
+                    <a href="@Url.Action("Profile", "Home")" class="btn btn-primary">
+                        <i class="bi bi-person-gear"></i> View Profile
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-shield-check"></i> Quick Actions
+                    </h5>
+                </div>
+                <div class="card-body">
+                    @if (User.IsInRole("Admin"))
+                    {
+                        <div class="d-grid gap-2">
+                            <a href="@Url.Action("Index", "UserManagement")" class="btn btn-outline-primary">
+                                <i class="bi bi-people"></i> Manage Users
+                            </a>
+                            <a href="@Url.Action("Index", "RoleManagement")" class="btn btn-outline-primary">
+                                <i class="bi bi-shield-check"></i> Manage Roles
+                            </a>
+                            <a href="@Url.Action("Index", "Clients", new { area = "Admin" })" class="btn btn-outline-primary">
+                                <i class="bi bi-diagram-3"></i> OAuth Clients
+                            </a>
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-muted">You don't have admin privileges.</p>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body text-center">
+                    <i class="bi bi-shield-lock display-1 text-primary"></i>
+                    <h5 class="card-title">Secure Authentication</h5>
+                    <p class="card-text">Enterprise-grade security with OAuth 2.0 and OpenID Connect support.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body text-center">
+                    <i class="bi bi-people display-1 text-primary"></i>
+                    <h5 class="card-title">User Management</h5>
+                    <p class="card-text">Comprehensive user and role management with fine-grained permissions.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body text-center">
+                    <i class="bi bi-gear display-1 text-primary"></i>
+                    <h5 class="card-title">Easy Integration</h5>
+                    <p class="card-text">Simple integration with modern web applications and APIs.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+}

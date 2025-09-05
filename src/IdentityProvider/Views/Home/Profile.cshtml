@@ -1,0 +1,96 @@
+@model dynamic
+@{
+    ViewData["Title"] = "Profile";
+}
+
+<div class="row">
+    <div class="col-12">
+        <h2><i class="bi bi-person-circle"></i> User Profile</h2>
+        <hr />
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Profile Information</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-sm-3">
+                        <strong>User ID:</strong>
+                    </div>
+                    <div class="col-sm-9">
+                        <code>@Model.UserId</code>
+                    </div>
+                </div>
+                <hr />
+                <div class="row">
+                    <div class="col-sm-3">
+                        <strong>Username:</strong>
+                    </div>
+                    <div class="col-sm-9">
+                        @Model.UserName
+                    </div>
+                </div>
+                <hr />
+                <div class="row">
+                    <div class="col-sm-3">
+                        <strong>Email:</strong>
+                    </div>
+                    <div class="col-sm-9">
+                        @Model.Email
+                    </div>
+                </div>
+                <hr />
+                <div class="row">
+                    <div class="col-sm-3">
+                        <strong>Roles:</strong>
+                    </div>
+                    <div class="col-sm-9">
+                        @foreach (var role in Model.Roles)
+                        {
+                            <span class="badge bg-primary me-1">@role</span>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="@Url.Action("Edit", "UserManagement", new { id = Model.UserId })" class="btn btn-primary">
+                        <i class="bi bi-pencil"></i> Edit Profile
+                    </a>
+                    <a href="@Url.Action("Index", "Home")" class="btn btn-outline-secondary">
+                        <i class="bi bi-house"></i> Back to Home
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5 class="card-title mb-0">OpenID Connect</h5>
+            </div>
+            <div class="card-body">
+                <p class="card-text">Access your user information via OpenID Connect:</p>
+                <div class="d-grid gap-2">
+                    <a href="@Url.Action("UserInfo", "Authentication")" class="btn btn-outline-info btn-sm" target="_blank">
+                        <i class="bi bi-info-circle"></i> UserInfo Endpoint
+                    </a>
+                    <a href="@Url.Action("OpenIdConfiguration", "Authentication")" class="btn btn-outline-info btn-sm" target="_blank">
+                        <i class="bi bi-gear"></i> OpenID Configuration
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

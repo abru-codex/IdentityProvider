@@ -1,0 +1,215 @@
+@model List<IdentityProvider.Models.ViewModels.RoleListViewModel>
+@{
+    ViewData["Title"] = "Roles";
+    ViewData["PageTitle"] = "Role Management";
+    ViewData["PageSubtitle"] = "Manage system roles and user assignments";
+    ViewData["Breadcrumbs"] = new List<(string Text, string? Url)>
+    {
+        ("Admin", Url.Action("Index", "Dashboard", new { area = "Admin" })),
+        ("Roles", null)
+    };
+    ViewData["PageActions"] = $@"
+        <a href=""/Admin/Roles/Create"" class=""btn btn-primary"">
+            <i class=""bi bi-shield-plus""></i> Add New Role
+        </a>";
+    Layout = "_Layout";
+}
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @TempData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<div class="card">
+    <div class="card-header">
+        <div class="row">
+            <div class="col">
+                <i class="bi bi-shield-check"></i> Roles List
+            </div>
+            <div class="col-auto">
+                <input type="text" class="form-control form-control-sm" id="roleSearch" placeholder="Search roles...">
+            </div>
+        </div>
+    </div>
+    <div class="card-body">
+        @if (Model.Any())
+        {
+            <div class="table-responsive">
+                <table class="table table-hover" id="rolesTable">
+                    <thead>
+                        <tr>
+                            <th>Role Name</th>
+                            <th>Normalized Name</th>
+                            <th>User Count</th>
+                            <th>Assigned Users</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var role in Model)
+                        {
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="role-icon bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2">
+                                            <i class="bi bi-shield-check"></i>
+                                        </div>
+                                        <div>
+                                            <div class="fw-bold">@role.Name</div>
+                                            <small class="text-muted">ID: @role.Id.Substring(0, 8)...</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <code class="text-muted">@role.NormalizedName</code>
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary">@role.UserCount user@(role.UserCount != 1 ? "s" : "")</span>
+                                </td>
+                                <td>
+                                    @if (role.AssignedUsers.Any())
+                                    {
+                                        <div class="user-avatars">
+                                            @foreach (var user in role.AssignedUsers.Take(3))
+                                            {
+                                                <div class="user-avatar bg-info text-white rounded-circle d-inline-flex align-items-center justify-content-center me-1" title="@user">
+                                                    @user.Substring(0, 1).ToUpper()
+                                                </div>
+                                            }
+                                            @if (role.AssignedUsers.Count > 3)
+                                            {
+                                                <span class="text-muted ms-1">+@(role.AssignedUsers.Count - 3) more</span>
+                                            }
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">No users assigned</span>
+                                    }
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <a href="/Admin/Roles/Details/@role.Id" class="btn btn-outline-primary" title="View Details">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        <a href="/Admin/Roles/Edit/@role.Id" class="btn btn-outline-secondary" title="Edit">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <button type="button" class="btn btn-outline-danger" onclick="confirmDelete('@role.Id', '@role.Name', @role.UserCount)" title="Delete">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="text-center py-5">
+                <i class="bi bi-shield-x text-muted" style="font-size: 3rem;"></i>
+                <h4 class="text-muted mt-3">No Roles Found</h4>
+                <p class="text-muted">Get started by creating your first role.</p>
+                <a href="/Admin/Roles/Create" class="btn btn-primary">
+                    <i class="bi bi-shield-plus"></i> Create Role
+                </a>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="deleteWarning" class="alert alert-warning d-none">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    This role has <strong id="userCount"></strong> assigned user(s). You must remove all users from this role before deleting it.
+                </div>
+                <p>Are you sure you want to delete role <strong id="deleteRoleName"></strong>?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="deleteForm" method="post" style="display: inline;">
+                    <button type="submit" class="btn btn-danger" id="deleteButton">Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Search functionality
+        document.getElementById('roleSearch').addEventListener('keyup', function() {
+            var searchText = this.value.toLowerCase();
+            var rows = document.querySelectorAll('#rolesTable tbody tr');
+            
+            rows.forEach(function(row) {
+                var text = row.textContent.toLowerCase();
+                row.style.display = text.includes(searchText) ? '' : 'none';
+            });
+        });
+
+        // Delete confirmation
+        function confirmDelete(roleId, roleName, userCount) {
+            document.getElementById('deleteRoleName').textContent = roleName;
+            document.getElementById('deleteForm').action = '/Admin/Roles/Delete/' + roleId;
+            
+            var deleteButton = document.getElementById('deleteButton');
+            var deleteWarning = document.getElementById('deleteWarning');
+            var userCountSpan = document.getElementById('userCount');
+            
+            if (userCount > 0) {
+                deleteWarning.classList.remove('d-none');
+                userCountSpan.textContent = userCount;
+                deleteButton.disabled = true;
+                deleteButton.textContent = 'Cannot Delete';
+            } else {
+                deleteWarning.classList.add('d-none');
+                deleteButton.disabled = false;
+                deleteButton.textContent = 'Delete';
+            }
+            
+            new bootstrap.Modal(document.getElementById('deleteModal')).show();
+        }
+    </script>
+
+    <style>
+        .role-icon {
+            width: 32px;
+            height: 32px;
+            font-size: 14px;
+        }
+        
+        .user-avatar {
+            width: 24px;
+            height: 24px;
+            font-size: 11px;
+        }
+        
+        .user-avatars {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+    </style>
+}
