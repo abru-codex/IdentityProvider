@@ -1,6 +1,6 @@
+using IdentityProvider.Database;
 using IdentityProvider.Options;
 using IdentityProvider.Models;
-using IdentityProvider.DbContext;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
 using Microsoft.EntityFrameworkCore;

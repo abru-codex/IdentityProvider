@@ -1,4 +1,4 @@
-using IdentityProvider.Models.ViewModels;
+using IdentityProvider.Areas.Admin.Models.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;

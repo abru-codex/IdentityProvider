@@ -1,5 +1,4 @@
 using IdentityProvider.Authorization;
-using IdentityProvider.DbContext;
 using IdentityProvider.Options;
 using IdentityProvider.Services;
 using IdentityProvider.Validation;
@@ -9,12 +8,21 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using FluentValidation;
+using IdentityProvider.Database;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// Configure Redis caching
+builder.Services.AddStackExchangeRedisCache(options =>
+{
+    options.Configuration = builder.Configuration.GetConnectionString("Redis") ?? "localhost:6379";
+    options.InstanceName = "IdentityProvider";
+});
 
 // Configure Identity
 builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
@@ -61,6 +69,8 @@ builder.Services.AddScoped<DbSeeder>();
 builder.Services.AddScoped<AuthorizationService>();
 builder.Services.AddScoped<IOAuthClientService, OAuthClientService>();
 builder.Services.AddScoped<IRolePermissionService, RolePermissionService>();
+builder.Services.AddScoped<IPermissionCacheService, PermissionCacheService>();
+builder.Services.AddScoped<IUserRoleService, UserRoleService>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddHttpClient();
 

@@ -1,7 +1,7 @@
+using IdentityProvider.Areas.Admin.Models.ViewModels;
 using IdentityProvider.Authorization;
-using IdentityProvider.DbContext;
+using IdentityProvider.Database;
 using IdentityProvider.Models;
-using IdentityProvider.Models.ViewModels;
 using IdentityProvider.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;

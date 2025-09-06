@@ -2,7 +2,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
-using IdentityProvider.DbContext;
+using IdentityProvider.Database;
 using IdentityProvider.Models;
 using IdentityProvider.Options;
 using Microsoft.AspNetCore.Identity;

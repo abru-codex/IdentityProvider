@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Mvc;
 using IdentityProvider.Models;
 using IdentityProvider.Services;
 using System.Security.Claims;
+using IdentityProvider.Areas.Admin.Models.ViewModels;
+using IdentityProvider.Models.ViewModels;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.AspNetCore.Authorization;
 
@@ -24,7 +26,7 @@ namespace IdentityProvider.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Login(Models.ViewModels.LoginViewModel model, string? returnUrl = null)
+        public async Task<IActionResult> Login(LoginViewModel model, string? returnUrl = null)
         {
             ViewData["ReturnUrl"] = returnUrl;
 

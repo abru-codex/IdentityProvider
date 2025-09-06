@@ -1,9 +1,9 @@
+using IdentityProvider.Areas.Admin.Models.ViewModels;
+using IdentityProvider.Database;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using IdentityProvider.Models.ViewModels;
 using IdentityProvider.Models;
-using IdentityProvider.DbContext;
 
 namespace IdentityProvider.Areas.Admin.Controllers
 {

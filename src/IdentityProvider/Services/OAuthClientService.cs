@@ -1,4 +1,4 @@
-using IdentityProvider.DbContext;
+using IdentityProvider.Database;
 using IdentityProvider.Models;
 using Microsoft.EntityFrameworkCore;
 

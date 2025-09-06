@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace IdentityProvider.Models.ViewModels
+namespace IdentityProvider.Areas.Admin.Models.ViewModels
 {
     public class UserListViewModel
     {
@@ -129,21 +129,5 @@ namespace IdentityProvider.Models.ViewModels
         public int TotalCount { get; set; }
         public string? Search { get; set; }
         public int TotalPages => (int)Math.Ceiling((double)TotalCount / PageSize);
-    }
-
-    public class LoginViewModel
-    {
-        [Required]
-        [EmailAddress]
-        [Display(Name = "Email")]
-        public string Username { get; set; } = default!;
-
-        [Required]
-        [DataType(DataType.Password)]
-        [Display(Name = "Password")]
-        public string Password { get; set; } = default!;
-
-        [Display(Name = "Remember me")]
-        public bool RememberMe { get; set; }
     }
 }

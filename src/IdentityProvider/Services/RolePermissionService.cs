@@ -1,7 +1,8 @@
-using IdentityProvider.DbContext;
+using IdentityProvider.Database;
 using IdentityProvider.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using IdentityProvider.Services;
 
 namespace IdentityProvider.Services
 {
@@ -21,31 +22,54 @@ namespace IdentityProvider.Services
     {
         private readonly ApplicationDbContext _context;
         private readonly UserManager<IdentityUser> _userManager;
+        private readonly IPermissionCacheService _cacheService;
+        private readonly ILogger<RolePermissionService> _logger;
 
-        public RolePermissionService(ApplicationDbContext context, UserManager<IdentityUser> userManager)
+        public RolePermissionService(
+            ApplicationDbContext context, 
+            UserManager<IdentityUser> userManager,
+            IPermissionCacheService cacheService,
+            ILogger<RolePermissionService> logger)
         {
             _context = context;
             _userManager = userManager;
+            _cacheService = cacheService;
+            _logger = logger;
         }
 
         public async Task<List<string>> GetRolePermissionsAsync(string roleId)
         {
-            return await _context.RolePermissions
+            // Try to get from cache first
+            var cachedPermissions = await _cacheService.GetRolePermissionsAsync(roleId);
+            if (cachedPermissions != null)
+            {
+                return cachedPermissions;
+            }
+
+            // Get from database
+            var permissions = await _context.RolePermissions
                 .Where(rp => rp.RoleId == roleId)
                 .Select(rp => rp.Permission)
                 .ToListAsync();
+
+            // Cache the result
+            await _cacheService.SetRolePermissionsAsync(roleId, permissions);
+
+            return permissions;
         }
 
         public async Task<bool> HasPermissionAsync(string roleId, string permission)
         {
-            return await _context.RolePermissions
-                .AnyAsync(rp => rp.RoleId == roleId && rp.Permission == permission);
+            var permissions = await GetRolePermissionsAsync(roleId);
+            return permissions.Contains(permission);
         }
 
         public async Task<bool> AddPermissionAsync(string roleId, string permission, string? roleName = null)
         {
             // Check if permission already exists
-            var exists = await HasPermissionAsync(roleId, permission);
+            var exists = await _context.RolePermissions
+                .AnyAsync(rp => rp.RoleId == roleId && rp.Permission == permission);
+            
             if (exists)
                 return false;
 
@@ -59,6 +83,13 @@ namespace IdentityProvider.Services
 
             _context.RolePermissions.Add(rolePermission);
             await _context.SaveChangesAsync();
+
+            // Invalidate cache for this role
+            await _cacheService.InvalidateRolePermissionsAsync(roleId);
+            
+            // Invalidate user caches for users with this role
+            await InvalidateUserCachesForRoleAsync(roleId);
+
             return true;
         }
 
@@ -72,6 +103,13 @@ namespace IdentityProvider.Services
 
             _context.RolePermissions.Remove(rolePermission);
             await _context.SaveChangesAsync();
+
+            // Invalidate cache for this role
+            await _cacheService.InvalidateRolePermissionsAsync(roleId);
+            
+            // Invalidate user caches for users with this role
+            await InvalidateUserCachesForRoleAsync(roleId);
+
             return true;
         }
 
@@ -104,6 +142,13 @@ namespace IdentityProvider.Services
 
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
+
+                // Invalidate cache for this role
+                await _cacheService.InvalidateRolePermissionsAsync(roleId);
+                
+                // Invalidate user caches for users with this role
+                await InvalidateUserCachesForRoleAsync(roleId);
+
                 return true;
             }
             catch
@@ -115,12 +160,25 @@ namespace IdentityProvider.Services
 
         public async Task<List<string>> GetUserPermissionsAsync(string userId)
         {
+            // Try to get from cache first
+            var cachedPermissions = await _cacheService.GetUserPermissionsAsync(userId);
+            if (cachedPermissions != null)
+            {
+                return cachedPermissions;
+            }
+
+            // Get from database
             var user = await _userManager.FindByIdAsync(userId);
             if (user == null)
                 return new List<string>();
 
             var userRoles = await _userManager.GetRolesAsync(user);
-            return await GetUserPermissionsByRolesAsync(userRoles);
+            var permissions = await GetUserPermissionsByRolesAsync(userRoles);
+
+            // Cache the result
+            await _cacheService.SetUserPermissionsAsync(userId, permissions);
+
+            return permissions;
         }
 
         public async Task<bool> UserHasPermissionAsync(string userId, string permission)
@@ -150,6 +208,32 @@ namespace IdentityProvider.Services
                 .ToListAsync();
 
             return permissions;
+        }
+
+        private async Task InvalidateUserCachesForRoleAsync(string roleId)
+        {
+            try
+            {
+                // Get role name from roleId
+                var role = await _context.Roles.FindAsync(roleId);
+                if (role?.Name == null) return;
+
+                // Get all users with this role
+                var usersInRole = await _userManager.GetUsersInRoleAsync(role.Name);
+                
+                // Invalidate cache for each user
+                foreach (var user in usersInRole)
+                {
+                    await _cacheService.InvalidateUserPermissionsAsync(user.Id);
+                }
+
+                _logger.LogInformation("Invalidated permission cache for {UserCount} users in role {RoleId}", 
+                    usersInRole.Count, roleId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error invalidating user caches for role {RoleId}", roleId);
+            }
         }
     }
 }

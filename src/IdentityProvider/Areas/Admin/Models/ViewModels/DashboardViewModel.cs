@@ -1,4 +1,4 @@
-namespace IdentityProvider.Models.ViewModels
+namespace IdentityProvider.Areas.Admin.Models.ViewModels
 {
     public class DashboardViewModel
     {
