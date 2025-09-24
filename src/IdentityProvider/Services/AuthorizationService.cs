@@ -75,7 +75,6 @@ public class AuthorizationService
             return null;
         }
 
-        // Validate PKCE (Proof Key for Code Exchange) if challenge exists
         if (!string.IsNullOrEmpty(authCode.CodeChallenge) && !string.IsNullOrEmpty(codeVerifier))
         {
             if (!VerifyCodeChallenge(codeVerifier, authCode.CodeChallenge, authCode.CodeChallengeMethod))
@@ -84,7 +83,6 @@ public class AuthorizationService
             }
         }
 
-        // Mark the code as used
         authCode.IsUsed = true;
         await _dbContext.SaveChangesAsync();
 
@@ -168,7 +166,6 @@ public class AuthorizationService
 
     private IEnumerable<string> CleanScopes(IEnumerable<string> scopes)
     {
-        // Extract scopes from space-delimited string or collection
         return scopes
             .SelectMany(s => s.Split(' ', StringSplitOptions.RemoveEmptyEntries))
             .Distinct();

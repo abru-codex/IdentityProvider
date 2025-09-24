@@ -13,38 +13,31 @@ using IdentityProvider.Database;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// Configure Redis caching
 builder.Services.AddStackExchangeRedisCache(options =>
 {
     options.Configuration = builder.Configuration.GetConnectionString("Redis") ?? "localhost:6379";
     options.InstanceName = "IdentityProvider";
 });
 
-// Configure Identity
 builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
     {
-        // Password settings
         options.Password.RequireDigit = true;
         options.Password.RequireLowercase = true;
         options.Password.RequireUppercase = true;
         options.Password.RequireNonAlphanumeric = true;
         options.Password.RequiredLength = 8;
 
-        // Lockout settings
         options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
         options.Lockout.MaxFailedAccessAttempts = 5;
 
-        // User settings
         options.User.RequireUniqueEmail = true;
     })
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddDefaultTokenProviders();
 
-// Configure Cookies
 builder.Services.ConfigureApplicationCookie(options =>
 {
     options.Cookie.HttpOnly = true;
@@ -55,10 +48,8 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.AccessDeniedPath = "/Home/AccessDenied";
 
 });
-// Configure FluentValidation
 builder.Services.AddFluentValidation();
 
-// Register options
 builder.Services.Configure<JwtOption>(builder.Configuration.GetSection("Jwt"));
 builder.Services.Configure<DefaultAdminOption>(builder.Configuration.GetSection("DefaultAdmin"));
 
@@ -74,7 +65,6 @@ builder.Services.AddScoped<IUserRoleService, UserRoleService>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddHttpClient();
 
-// Configure Authentication
 builder.Services.AddAuthentication()
     .AddCookie()
     .AddJwtBearer(options =>
@@ -86,7 +76,6 @@ builder.Services.AddAuthentication()
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
             ValidIssuer = builder.Configuration["Jwt:Issuer"],
-            // Accept both Issuer and Audience values to match token generation
             ValidAudiences = new[]
             {
                 builder.Configuration["Jwt:Issuer"],
@@ -94,7 +83,6 @@ builder.Services.AddAuthentication()
             }
         };
 
-        // Enable using the access token from the query string for SignalR and other non-header based protocols
         options.Events = new JwtBearerEvents
         {
             OnMessageReceived = context =>
@@ -112,25 +100,20 @@ builder.Services.AddAuthentication()
         };
     });
 
-// Provide signing key via options pattern (avoids using service provider inside AddJwtBearer)
 builder.Services.AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme)
     .Configure<JwksService>((options, jwksService) =>
     {
         options.TokenValidationParameters.IssuerSigningKey = jwksService.GetSecurityKey();
     });
 
-// Add authorization policies
 builder.Services.AddAuthorization(options =>
 {
-    // Admin policy - requires the Admin role
     options.AddPolicy("AdminOnly", policy =>
         policy.RequireRole("Admin"));
 
-    // Authenticated users policy
     options.AddPolicy("AuthenticatedUsers", policy =>
         policy.RequireAuthenticatedUser());
 
-    // Permission-based policies - dynamically create policies for each permission
     foreach (var permission in typeof(IdentityProvider.Models.Permissions).GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)
         .Where(f => f.IsLiteral && !f.IsInitOnly && f.FieldType == typeof(string))
         .Select(f => f.GetValue(null)?.ToString())
@@ -140,7 +123,6 @@ builder.Services.AddAuthorization(options =>
             policy.Requirements.Add(new IdentityProvider.Authorization.PermissionRequirement(permission!)));
     }
 
-    // Scope-based policies for API access
     options.AddPolicy("ApiScope", policy =>
     {
         policy.RequireAuthenticatedUser();
@@ -148,7 +130,6 @@ builder.Services.AddAuthorization(options =>
         policy.RequireClaim("scope", "api");
     });
 
-    // UserInfo endpoint should authorize via Bearer token with at least 'openid' scope
     options.AddPolicy("UserInfoScope", policy =>
     {
         policy.RequireAuthenticatedUser();
@@ -161,7 +142,6 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("DefaultCorsPolicy", policy =>
     {
-        // Start with localhost for development, will be updated dynamically
         policy.WithOrigins("http://localhost:3000", "https://localhost:3001")
             .AllowAnyHeader()
             .AllowAnyMethod()
@@ -173,7 +153,6 @@ builder.Services.AddControllersWithViews();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseDeveloperExceptionPage();
@@ -181,14 +160,11 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-// Enable CORS
 app.UseCors("DefaultCorsPolicy");
 
-// Authentication & Authorization middleware
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Map MVC Controllers
 app.MapControllerRoute(
     name: "Admin",
     pattern: "{area:exists}/{controller=Home}/{action=Index}/{id?}");
@@ -197,6 +173,5 @@ app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
-// Seed the database
 await app.SeedDatabaseAsync();
 app.Run();

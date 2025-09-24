@@ -40,7 +40,6 @@ namespace IdentityProvider.Services
                 
                 if (result.Succeeded)
                 {
-                    // Invalidate user's permission cache
                     await _cacheService.InvalidateUserPermissionsAsync(userId);
                     _logger.LogInformation("Added user {UserId} to role {RoleName} and invalidated cache", userId, roleName);
                     return true;
@@ -74,7 +73,6 @@ namespace IdentityProvider.Services
                 
                 if (result.Succeeded)
                 {
-                    // Invalidate user's permission cache
                     await _cacheService.InvalidateUserPermissionsAsync(userId);
                     _logger.LogInformation("Removed user {UserId} from role {RoleName} and invalidated cache", userId, roleName);
                     return true;
@@ -104,10 +102,8 @@ namespace IdentityProvider.Services
                     return false;
                 }
 
-                // Get current roles
                 var currentRoles = await _userManager.GetRolesAsync(user);
                 
-                // Remove from current roles
                 var removeResult = await _userManager.RemoveFromRolesAsync(user, currentRoles);
                 if (!removeResult.Succeeded)
                 {
@@ -116,7 +112,6 @@ namespace IdentityProvider.Services
                     return false;
                 }
 
-                // Add to new roles
                 var addResult = await _userManager.AddToRolesAsync(user, roles);
                 if (!addResult.Succeeded)
                 {
@@ -125,7 +120,6 @@ namespace IdentityProvider.Services
                     return false;
                 }
 
-                // Invalidate user's permission cache
                 await _cacheService.InvalidateUserPermissionsAsync(userId);
                 _logger.LogInformation("Updated roles for user {UserId} and invalidated cache", userId);
                 return true;

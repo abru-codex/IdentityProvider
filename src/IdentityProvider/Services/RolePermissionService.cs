@@ -39,20 +39,17 @@ namespace IdentityProvider.Services
 
         public async Task<List<string>> GetRolePermissionsAsync(string roleId)
         {
-            // Try to get from cache first
             var cachedPermissions = await _cacheService.GetRolePermissionsAsync(roleId);
             if (cachedPermissions != null)
             {
                 return cachedPermissions;
             }
 
-            // Get from database
             var permissions = await _context.RolePermissions
                 .Where(rp => rp.RoleId == roleId)
                 .Select(rp => rp.Permission)
                 .ToListAsync();
 
-            // Cache the result
             await _cacheService.SetRolePermissionsAsync(roleId, permissions);
 
             return permissions;
@@ -66,7 +63,6 @@ namespace IdentityProvider.Services
 
         public async Task<bool> AddPermissionAsync(string roleId, string permission, string? roleName = null)
         {
-            // Check if permission already exists
             var exists = await _context.RolePermissions
                 .AnyAsync(rp => rp.RoleId == roleId && rp.Permission == permission);
             
@@ -84,10 +80,8 @@ namespace IdentityProvider.Services
             _context.RolePermissions.Add(rolePermission);
             await _context.SaveChangesAsync();
 
-            // Invalidate cache for this role
             await _cacheService.InvalidateRolePermissionsAsync(roleId);
             
-            // Invalidate user caches for users with this role
             await InvalidateUserCachesForRoleAsync(roleId);
 
             return true;
@@ -104,10 +98,8 @@ namespace IdentityProvider.Services
             _context.RolePermissions.Remove(rolePermission);
             await _context.SaveChangesAsync();
 
-            // Invalidate cache for this role
             await _cacheService.InvalidateRolePermissionsAsync(roleId);
             
-            // Invalidate user caches for users with this role
             await InvalidateUserCachesForRoleAsync(roleId);
 
             return true;
@@ -119,14 +111,12 @@ namespace IdentityProvider.Services
             
             try
             {
-                // Remove existing permissions
                 var existingPermissions = await _context.RolePermissions
                     .Where(rp => rp.RoleId == roleId)
                     .ToListAsync();
 
                 _context.RolePermissions.RemoveRange(existingPermissions);
 
-                // Add new permissions
                 if (permissions.Any())
                 {
                     var newPermissions = permissions.Select(permission => new RolePermission
@@ -143,11 +133,9 @@ namespace IdentityProvider.Services
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
 
-                // Invalidate cache for this role
-                await _cacheService.InvalidateRolePermissionsAsync(roleId);
+                    await _cacheService.InvalidateRolePermissionsAsync(roleId);
                 
-                // Invalidate user caches for users with this role
-                await InvalidateUserCachesForRoleAsync(roleId);
+                    await InvalidateUserCachesForRoleAsync(roleId);
 
                 return true;
             }
@@ -160,14 +148,12 @@ namespace IdentityProvider.Services
 
         public async Task<List<string>> GetUserPermissionsAsync(string userId)
         {
-            // Try to get from cache first
             var cachedPermissions = await _cacheService.GetUserPermissionsAsync(userId);
             if (cachedPermissions != null)
             {
                 return cachedPermissions;
             }
 
-            // Get from database
             var user = await _userManager.FindByIdAsync(userId);
             if (user == null)
                 return new List<string>();
@@ -175,7 +161,6 @@ namespace IdentityProvider.Services
             var userRoles = await _userManager.GetRolesAsync(user);
             var permissions = await GetUserPermissionsByRolesAsync(userRoles);
 
-            // Cache the result
             await _cacheService.SetUserPermissionsAsync(userId, permissions);
 
             return permissions;
@@ -192,7 +177,6 @@ namespace IdentityProvider.Services
             if (!userRoles.Any())
                 return new List<string>();
 
-            // Get role IDs from role names
             var roleIds = await _context.Roles
                 .Where(r => userRoles.Contains(r.Name!))
                 .Select(r => r.Id)
@@ -214,14 +198,11 @@ namespace IdentityProvider.Services
         {
             try
             {
-                // Get role name from roleId
                 var role = await _context.Roles.FindAsync(roleId);
                 if (role?.Name == null) return;
 
-                // Get all users with this role
                 var usersInRole = await _userManager.GetUsersInRoleAsync(role.Name);
                 
-                // Invalidate cache for each user
                 foreach (var user in usersInRole)
                 {
                     await _cacheService.InvalidateUserPermissionsAsync(user.Id);

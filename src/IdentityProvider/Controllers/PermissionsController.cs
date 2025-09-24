@@ -24,9 +24,6 @@ namespace IdentityProvider.Controllers
             _logger = logger;
         }
 
-        /// <summary>
-        /// Get current user's permissions (cached)
-        /// </summary>
         [HttpGet("my-permissions")]
         public async Task<IActionResult> GetMyPermissions()
         {
@@ -40,9 +37,6 @@ namespace IdentityProvider.Controllers
             return Ok(new { UserId = userId, Permissions = permissions });
         }
 
-        /// <summary>
-        /// Check if current user has a specific permission (cached)
-        /// </summary>
         [HttpGet("check/{permission}")]
         public async Task<IActionResult> CheckPermission(string permission)
         {
@@ -56,9 +50,6 @@ namespace IdentityProvider.Controllers
             return Ok(new { UserId = userId, Permission = permission, HasPermission = hasPermission });
         }
 
-        /// <summary>
-        /// Get permissions for a specific role (cached)
-        /// </summary>
         [HttpGet("role/{roleId}")]
         [Authorize(Policy = "AdminOnly")]
         public async Task<IActionResult> GetRolePermissions(string roleId)
@@ -67,9 +58,6 @@ namespace IdentityProvider.Controllers
             return Ok(new { RoleId = roleId, Permissions = permissions });
         }
 
-        /// <summary>
-        /// Add permission to role (invalidates cache)
-        /// </summary>
         [HttpPost("role/{roleId}/permission")]
         [Authorize(Policy = "AdminOnly")]
         public async Task<IActionResult> AddPermissionToRole(string roleId, [FromBody] AddPermissionRequest request)
@@ -84,9 +72,6 @@ namespace IdentityProvider.Controllers
             return BadRequest(new { Message = "Failed to add permission or permission already exists" });
         }
 
-        /// <summary>
-        /// Remove permission from role (invalidates cache)
-        /// </summary>
         [HttpDelete("role/{roleId}/permission/{permission}")]
         [Authorize(Policy = "AdminOnly")]
         public async Task<IActionResult> RemovePermissionFromRole(string roleId, string permission)
@@ -101,9 +86,6 @@ namespace IdentityProvider.Controllers
             return BadRequest(new { Message = "Failed to remove permission or permission not found" });
         }
 
-        /// <summary>
-        /// Add user to role (invalidates user's permission cache)
-        /// </summary>
         [HttpPost("user/{userId}/role")]
         [Authorize(Policy = "AdminOnly")]
         public async Task<IActionResult> AddUserToRole(string userId, [FromBody] AddRoleRequest request)
@@ -118,9 +100,6 @@ namespace IdentityProvider.Controllers
             return BadRequest(new { Message = "Failed to add user to role" });
         }
 
-        /// <summary>
-        /// Remove user from role (invalidates user's permission cache)
-        /// </summary>
         [HttpDelete("user/{userId}/role/{roleName}")]
         [Authorize(Policy = "AdminOnly")]
         public async Task<IActionResult> RemoveUserFromRole(string userId, string roleName)

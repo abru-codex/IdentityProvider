@@ -26,13 +26,9 @@ namespace IdentityProvider.Areas.Admin.Controllers
         [RequirePermission(IdentityProvider.Models.Permissions.RoleRead)]
         public async Task<IActionResult> Index()
         {
-            // Use LINQ to efficiently load all data in batches
             var roles = await roleManager.Roles.ToListAsync();
-            
-            // Get all role IDs for batch permission loading
+
             var roleIds = roles.Select(r => r.Id).ToList();
-            
-            // Load all permissions for all roles in one query using LINQ
             var rolePermissions = await context.RolePermissions
                 .Where(rp => roleIds.Contains(rp.RoleId))
                 .GroupBy(rp => rp.RoleId)
@@ -41,14 +37,10 @@ namespace IdentityProvider.Areas.Admin.Controllers
                     Permissions = g.Select(rp => rp.Permission).ToList() 
                 })
                 .ToListAsync();
-            
-            // Create a dictionary for fast lookup
             var permissionLookup = rolePermissions.ToDictionary(
                 rp => rp.RoleId, 
                 rp => rp.Permissions
             );
-            
-            // Load all user-role assignments in batches
             var roleViewModels = new List<RoleListViewModel>();
             
             foreach (var role in roles)
@@ -126,7 +118,6 @@ namespace IdentityProvider.Areas.Admin.Controllers
                 return View(model);
             }
 
-            // Check if role already exists
             var existingRole = await roleManager.FindByNameAsync(model.Name);
             if (existingRole != null)
             {
@@ -222,12 +213,10 @@ namespace IdentityProvider.Areas.Admin.Controllers
 
             if (!ModelState.IsValid)
             {
-                // Reload user data for the view
                 await LoadEditRoleViewModelData(model, role);
                 return View(model);
             }
 
-            // Check if the new name conflicts with an existing role (excluding current role)
             if (role.Name != model.Name)
             {
                 var existingRole = await roleManager.FindByNameAsync(model.Name);
@@ -270,7 +259,6 @@ namespace IdentityProvider.Areas.Admin.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            // Check if any users are assigned to this role
             var usersInRole = await userManager.GetUsersInRoleAsync(role.Name!);
             if (usersInRole.Any())
             {
@@ -358,11 +346,9 @@ namespace IdentityProvider.Areas.Admin.Controllers
 
             selectedUserIds ??= new List<string>();
 
-            // Get current users in role
             var currentUsersInRole = await userManager.GetUsersInRoleAsync(role.Name!);
             var currentUserIds = currentUsersInRole.Select(u => u.Id).ToList();
 
-            // Remove users that are no longer selected
             var usersToRemove = currentUserIds.Except(selectedUserIds).ToList();
             foreach (var userId in usersToRemove)
             {
@@ -373,7 +359,6 @@ namespace IdentityProvider.Areas.Admin.Controllers
                 }
             }
 
-            // Add newly selected users
             var usersToAdd = selectedUserIds.Except(currentUserIds).ToList();
             foreach (var userId in usersToAdd)
             {
@@ -388,7 +373,6 @@ namespace IdentityProvider.Areas.Admin.Controllers
             return RedirectToAction(nameof(Details), new { id = roleId });
         }
         
-        // Permission Management Methods
         [HttpGet("Permissions/{id}")]
         [RequirePermission(IdentityProvider.Models.Permissions.RoleManagePermissions)]
         public async Task<IActionResult> Permissions(string id)
@@ -400,7 +384,6 @@ namespace IdentityProvider.Areas.Admin.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            // Get assigned permissions for this role
             var assignedPermissions = await context.RolePermissions
                 .Where(rp => rp.RoleId == id)
                 .Select(rp => rp.Permission)
@@ -443,7 +426,6 @@ namespace IdentityProvider.Areas.Admin.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            // Get currently assigned permissions
             var assignedPermissions = await context.RolePermissions
                 .Where(rp => rp.RoleId == id)
                 .Select(rp => rp.Permission)
@@ -477,17 +459,14 @@ namespace IdentityProvider.Areas.Admin.Controllers
 
             try
             {
-                // Start a transaction
                 await using var transaction = await context.Database.BeginTransactionAsync();
 
-                // Remove all existing permissions for this role
                 var existingPermissions = await context.RolePermissions
                     .Where(rp => rp.RoleId == id)
                     .ToListAsync();
 
                 context.RolePermissions.RemoveRange(existingPermissions);
 
-                // Add new permissions
                 if (model.SelectedPermissions?.Any() == true)
                 {
                     var newPermissions = model.SelectedPermissions.Select(permission => new RolePermission
@@ -524,13 +503,11 @@ namespace IdentityProvider.Areas.Admin.Controllers
                 return Json(new { success = false, message = "Role not found." });
             }
 
-            // Check if permission is valid
             if (!IdentityProvider.Models.Permissions.GetAllPermissions().Contains(permission))
             {
                 return Json(new { success = false, message = "Invalid permission." });
             }
 
-            // Check if permission is already assigned
             var existingPermission = await context.RolePermissions
                 .FirstOrDefaultAsync(rp => rp.RoleId == roleId && rp.Permission == permission);
 

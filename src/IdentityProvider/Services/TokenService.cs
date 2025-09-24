@@ -76,13 +76,11 @@ public class TokenService
             claims.Add(new Claim("phone_number", user.PhoneNumber));
         }
 
-        // Add nonce if provided (important for OpenID Connect)
         if (!string.IsNullOrEmpty(nonce))
         {
             claims.Add(new Claim(JwtRegisteredClaimNames.Nonce, nonce));
         }
 
-        // Add client ID as audience
         claims.Add(new Claim(JwtRegisteredClaimNames.Aud, clientId));
 
         var signingCredentials = _jwksService.GetSigningCredentials();
@@ -113,15 +111,12 @@ public class TokenService
             new Claim("client_id", clientId)
         };
 
-        // Add roles as claims
         claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
 
-        // Add scopes as claims
         claims.AddRange(scopes.Select(scope => new Claim("scope", scope)));
 
         var signingCredentials = _jwksService.GetSigningCredentials();
 
-        // Find client configuration to determine token lifetime
         var clientConfig = _oidcOptions.Value.Clients.FirstOrDefault(c => c.ClientId == clientId);
         var tokenLifetime = lifetime ?? TimeSpan.FromMinutes(clientConfig?.AccessTokenLifetimeMinutes ?? 60);
 
@@ -137,7 +132,6 @@ public class TokenService
 
     public async Task<RefreshToken> GenerateRefreshTokenAsync(string userId, string clientId)
     {
-        // Find client configuration to determine token lifetime
         var clientConfig = _oidcOptions.Value.Clients.FirstOrDefault(c => c.ClientId == clientId);
         int refreshTokenLifetimeDays = clientConfig?.RefreshTokenLifetimeDays ?? 30;
 
