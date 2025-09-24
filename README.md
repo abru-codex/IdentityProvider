@@ -5,7 +5,7 @@ A simple OAuth 2.0 and OpenID Connect identity provider built with .NET
 ## Features
 
 ### Core Authentication
-- **OAuth 2.0 & OpenID Connect**: Full implementation of OAuth 2.0 authorization framework and OpenID Connect authentication layer
+- **OAuth 2.0 & OpenID Connect**: Implementation of OAuth 2.0 authorization framework and OpenID Connect authentication layer
 - **JWT Token Support**: Secure token generation and validation using JSON Web Tokens
 - **PKCE Support**: Proof Key for Code Exchange for enhanced security in public clients
 - **Refresh Tokens**: Long-lived refresh token support for seamless user experience
