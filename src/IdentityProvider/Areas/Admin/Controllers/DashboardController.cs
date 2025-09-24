@@ -45,7 +45,6 @@ namespace IdentityProvider.Areas.Admin.Controllers
 
         private async Task<List<UserGrowthData>> GetUserGrowthData()
         {
-            // Get user registration data for the last 7 days
             var sevenDaysAgo = DateTime.UtcNow.AddDays(-7);
             var users = await userManager.Users.ToListAsync();
 

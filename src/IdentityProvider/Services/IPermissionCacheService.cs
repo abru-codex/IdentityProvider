@@ -90,8 +90,6 @@ namespace IdentityProvider.Services
         {
             try
             {
-                // Note: This is a simplified implementation. In production, you might want to use Redis SCAN
-                // or maintain a set of active cache keys for more efficient bulk operations
                 _logger.LogWarning("InvalidateAllUserPermissionsAsync called - this might not clear all keys efficiently");
                 return Task.CompletedTask;
             }
@@ -106,8 +104,6 @@ namespace IdentityProvider.Services
         {
             try
             {
-                // In a production environment, you would maintain a mapping of roles to users
-                // For now, we'll log this as it requires additional infrastructure
                 _logger.LogInformation("Role {RoleId} permissions changed - consider clearing related user caches", roleId);
                 return Task.CompletedTask;
             }

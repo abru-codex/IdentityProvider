@@ -72,7 +72,6 @@ namespace IdentityProvider.Areas.Admin.Models.ViewModels
         public List<string> SelectedUserIds { get; set; } = new();
     }
 
-    // Permission-related ViewModels
     public class PermissionViewModel
     {
         public string Permission { get; set; } = default!;

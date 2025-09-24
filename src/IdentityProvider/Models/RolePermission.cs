@@ -16,7 +16,6 @@ namespace IdentityProvider.Models
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-        // Navigation property (optional, but useful for querying)
         public string? RoleName { get; set; }
     }
 }

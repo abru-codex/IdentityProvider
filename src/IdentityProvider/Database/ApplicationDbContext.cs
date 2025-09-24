@@ -21,7 +21,6 @@ public class ApplicationDbContext : IdentityDbContext<IdentityUser>
     {
         base.OnModelCreating(builder);
 
-        // Configure RefreshToken
         builder.Entity<RefreshToken>()
             .HasKey(r => r.Id);
 
@@ -29,7 +28,6 @@ public class ApplicationDbContext : IdentityDbContext<IdentityUser>
             .HasIndex(r => r.Token)
             .IsUnique();
 
-        // Configure AuthorizationCode
         builder.Entity<AuthorizationCode>()
             .HasKey(a => a.Id);
 
@@ -37,7 +35,6 @@ public class ApplicationDbContext : IdentityDbContext<IdentityUser>
             .HasIndex(a => a.Code)
             .IsUnique();
 
-        // Configure OAuthClient
         builder.Entity<OAuthClient>()
             .HasKey(c => c.Id);
 
@@ -45,7 +42,6 @@ public class ApplicationDbContext : IdentityDbContext<IdentityUser>
             .HasIndex(c => c.ClientId)
             .IsUnique();
 
-        // Configure RolePermission
         builder.Entity<RolePermission>()
             .HasKey(rp => rp.Id);
 

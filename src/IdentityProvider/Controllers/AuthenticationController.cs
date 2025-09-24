@@ -83,7 +83,6 @@ namespace IdentityProvider.Controllers
             string? state, string? scope, string? code_challenge, string? code_challenge_method,
             string? nonce, string? prompt)
         {
-            // For MVC, we'll handle OAuth authorization through a dedicated view
             var model = new OAuth2Request
             {
                 ClientId = client_id,
@@ -110,21 +109,18 @@ namespace IdentityProvider.Controllers
                 return View(model);
             }
 
-            // Validate the client
             if (!await authorizationService.ValidateClientAsync(model.ClientId))
             {
                 ModelState.AddModelError(string.Empty, "Invalid client ID");
                 return View(model);
             }
 
-            // Validate redirect URI
             if (!await authorizationService.ValidateRedirectUriAsync(model.ClientId, model.RedirectUri!))
             {
                 ModelState.AddModelError(string.Empty, "Invalid redirect URI");
                 return View(model);
             }
 
-            // Validate response type (we only support 'code' flow for now)
             if (model.ResponseType != "code")
             {
                 var redirectWithError = QueryHelpers.AddQueryString(model.RedirectUri!, new Dictionary<string, string>
@@ -149,7 +145,6 @@ namespace IdentityProvider.Controllers
 
                 var requestedScopes = model.Scope?.Split(' ') ?? Array.Empty<string>();
 
-                // Create authorization code
                 var authCode = await authorizationService.CreateAuthorizationCodeAsync(
                     userId!,
                     model.ClientId,
@@ -158,7 +153,6 @@ namespace IdentityProvider.Controllers
                     model.CodeChallengeMethod ?? "plain",
                     requestedScopes);
 
-                // Redirect back to client with code
                 var redirectUrl = QueryHelpers.AddQueryString(model.RedirectUri!, new Dictionary<string, string>
                 {
                     ["code"] = authCode.Code,

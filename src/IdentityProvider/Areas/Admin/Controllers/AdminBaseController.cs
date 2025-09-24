@@ -24,8 +24,7 @@ namespace IdentityProvider.Areas.Admin.Controllers
         {
             var client = HttpClientFactory.CreateClient();
             client.BaseAddress = new Uri(GetApiBaseUrl());
-            
-            // Get the current user's JWT token from the request
+
             var token = HttpContext.Request.Headers["Authorization"].ToString().Replace("Bearer ", "");
             if (!string.IsNullOrEmpty(token))
             {

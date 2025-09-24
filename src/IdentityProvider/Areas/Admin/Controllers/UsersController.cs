@@ -178,7 +178,6 @@ namespace IdentityProvider.Areas.Admin.Controllers
             
             if (result.Succeeded)
             {
-                // Update roles
                 var currentRoles = await userManager.GetRolesAsync(user);
                 await userManager.RemoveFromRolesAsync(user, currentRoles);
                 
@@ -254,13 +253,11 @@ namespace IdentityProvider.Areas.Admin.Controllers
 
             if (user.LockoutEnd != null && user.LockoutEnd > DateTimeOffset.UtcNow)
             {
-                // Unlock user
                 await userManager.SetLockoutEndDateAsync(user, null);
                 TempData["Success"] = "User unlocked successfully!";
             }
             else
             {
-                // Lock user for 30 days
                 await userManager.SetLockoutEndDateAsync(user, DateTimeOffset.UtcNow.AddDays(30));
                 TempData["Success"] = "User locked for 30 days!";
             }

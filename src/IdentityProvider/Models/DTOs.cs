@@ -1,6 +1,5 @@
 namespace IdentityProvider.Models
 {
-    // DTOs for User management
     public class RegisterUserDto
     {
         public string Email { get; set; } = default!;
@@ -42,7 +41,6 @@ namespace IdentityProvider.Models
         public List<string> Roles { get; set; } = new();
     }
 
-    // DTOs for Role management
     public class CreateRoleDto
     {
         public string Name { get; set; } = default!;
@@ -65,7 +63,6 @@ namespace IdentityProvider.Models
         public List<string> Users { get; set; } = new();
     }
 
-    // DTOs for Authentication
     public class LoginRequest
     {
         public string Username { get; set; } = default!;
@@ -80,7 +77,6 @@ namespace IdentityProvider.Models
         public string UserId { get; set; } = default!;
     }
 
-    // Pagination parameters
     public class PaginationParams
     {
         public int Skip { get; set; } = 0;

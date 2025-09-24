@@ -83,7 +83,6 @@ namespace IdentityProvider.Areas.Admin.Controllers
                 return View(model);
             }
 
-            // Check if client ID already exists
             var existingClient = await context.OAuthClients.FirstOrDefaultAsync(c => c.ClientId == model.ClientId);
             if (existingClient != null)
             {
@@ -162,10 +161,8 @@ namespace IdentityProvider.Areas.Admin.Controllers
                 return NotFound();
             }
 
-            // Update client properties
             client.ClientName = model.ClientName;
-            
-            // Only update secret if a new one is provided
+
             if (!string.IsNullOrWhiteSpace(model.ClientSecret))
             {
                 client.ClientSecret = model.ClientSecret;

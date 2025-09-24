@@ -30,8 +30,7 @@ public class OAuthClient
     
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }
-    
-    // Helper methods to convert string properties to lists
+
     public List<string> GetRedirectUris()
     {
         return string.IsNullOrWhiteSpace(RedirectUris) 

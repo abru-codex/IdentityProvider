@@ -35,7 +35,6 @@ namespace IdentityProvider.Authorization
                 return;
             }
 
-            // Check if user has the required permission
             var hasPermission = await _rolePermissionService.UserHasPermissionAsync(userId, requirement.Permission);
             
             if (hasPermission)
